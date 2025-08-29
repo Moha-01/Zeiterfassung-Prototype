@@ -9,7 +9,6 @@ import { PlusCircle, Edit, Trash2, Loader2, CalendarDays, Clock, MapPin } from '
 import type { TimeEntry, Employee, Location } from '@/types';
 import {
   calculateDuration,
-  calculateDurationInHours,
   formatDate,
   formatTime,
 } from '@/lib/utils';
@@ -19,7 +18,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -259,15 +257,11 @@ export function TimeLogList({
         {Object.keys(groupedEntries).length > 0 ? (
           <div className="space-y-6">
             {Object.entries(groupedEntries).map(([day, dayEntries]) => {
-              const dailyTotal = dayEntries.reduce(
-                (acc, entry) => acc + calculateDurationInHours(entry.startTime, entry.endTime),
-                0
-              );
               return (
                 <div key={day}>
                   <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
                     <CalendarDays className="h-5 w-5 text-muted-foreground" />
-                    {formatDate(day)} - <span className="text-primary">{dailyTotal.toFixed(2)} Stunden</span>
+                    {formatDate(day)}
                   </h3>
                    <div className="md:hidden space-y-4">
                     {dayEntries.map((entry) => (
