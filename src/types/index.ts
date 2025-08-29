@@ -1,6 +1,17 @@
 export type TimeEntry = {
   id: string;
-  employeeName: string;
+  employeeId: string;
+  locationId: string;
   startTime: string; // ISO string
   endTime: string; // ISO string
+};
+
+export type Employee = {
+    id: string;
+    name: string;
+};
+
+export type Location = {
+    id: string;
+    name: string;
 };

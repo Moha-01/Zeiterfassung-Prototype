@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format, parseISO, startOfDay } from 'date-fns';
 import { PlusCircle, Edit, Trash2, Loader2, CalendarDays } from 'lucide-react';
-import type { TimeEntry } from '@/types';
+import type { TimeEntry, Employee, Location } from '@/types';
 import {
   calculateDuration,
   calculateDurationInHours,
@@ -49,9 +49,11 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const timeEntrySchema = z.object({
-  employeeName: z.string().min(1, 'Mitarbeitername ist erforderlich.'),
+  employeeId: z.string().min(1, 'Mitarbeiter ist erforderlich.'),
+  locationId: z.string().min(1, 'Arbeitsort ist erforderlich.'),
   startTime: z.string().min(1, 'Startzeit ist erforderlich.'),
   endTime: z.string().min(1, 'Endzeit ist erforderlich.'),
 }).refine(data => new Date(data.startTime) < new Date(data.endTime), {
@@ -61,6 +63,8 @@ const timeEntrySchema = z.object({
 
 interface TimeLogListProps {
   entries: TimeEntry[];
+  employees: Employee[];
+  locations: Location[];
   onAddEntry: (entry: Omit<TimeEntry, 'id'>) => void;
   onUpdateEntry: (entry: TimeEntry) => void;
   onDeleteEntry: (id: string) => void;
@@ -68,6 +72,8 @@ interface TimeLogListProps {
 
 export function TimeLogList({
   entries,
+  employees,
+  locations,
   onAddEntry,
   onUpdateEntry,
   onDeleteEntry,
@@ -79,10 +85,14 @@ export function TimeLogList({
     resolver: zodResolver(timeEntrySchema),
   });
 
+  const getEmployeeName = (employeeId: string) => employees.find(e => e.id === employeeId)?.name || 'Unbekannt';
+  const getLocationName = (locationId: string) => locations.find(l => l.id === locationId)?.name || 'Unbekannt';
+
   const openDialogForEdit = (entry: TimeEntry) => {
     setEditingEntry(entry);
     form.reset({
-      employeeName: entry.employeeName,
+      employeeId: entry.employeeId,
+      locationId: entry.locationId,
       startTime: format(parseISO(entry.startTime), "yyyy-MM-dd'T'HH:mm"),
       endTime: format(parseISO(entry.endTime), "yyyy-MM-dd'T'HH:mm"),
     });
@@ -92,7 +102,8 @@ export function TimeLogList({
   const openDialogForAdd = () => {
     setEditingEntry(null);
     form.reset({
-      employeeName: '',
+      employeeId: '',
+      locationId: '',
       startTime: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
       endTime: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
     });
@@ -101,7 +112,8 @@ export function TimeLogList({
 
   const onSubmit = (values: z.infer<typeof timeEntrySchema>) => {
     const entryData = {
-      employeeName: values.employeeName,
+      employeeId: values.employeeId,
+      locationId: values.locationId,
       startTime: new Date(values.startTime).toISOString(),
       endTime: new Date(values.endTime).toISOString(),
     };
@@ -161,13 +173,40 @@ export function TimeLogList({
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="employeeName"
+                  name="employeeId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Mitarbeitername</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Max Mustermann" {...field} />
-                      </FormControl>
+                      <FormLabel>Mitarbeiter</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                           <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Mitarbeiter auswählen" />
+                            </SelectTrigger>
+                           </FormControl>
+                           <SelectContent>
+                                {employees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
+                           </SelectContent>
+                        </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="locationId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Arbeitsort</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                           <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Arbeitsort auswählen" />
+                            </SelectTrigger>
+                           </FormControl>
+                           <SelectContent>
+                                {locations.map(l => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
+                           </SelectContent>
+                        </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -230,6 +269,7 @@ export function TimeLogList({
                     <TableHeader>
                       <TableRow>
                         <TableHead>Mitarbeiter</TableHead>
+                        <TableHead>Arbeitsort</TableHead>
                         <TableHead>Start</TableHead>
                         <TableHead>Ende</TableHead>
                         <TableHead>Dauer</TableHead>
@@ -239,7 +279,8 @@ export function TimeLogList({
                     <TableBody>
                       {dayEntries.map((entry) => (
                         <TableRow key={entry.id}>
-                          <TableCell className="font-medium">{entry.employeeName}</TableCell>
+                          <TableCell className="font-medium">{getEmployeeName(entry.employeeId)}</TableCell>
+                          <TableCell>{getLocationName(entry.locationId)}</TableCell>
                           <TableCell>{formatTime(entry.startTime)}</TableCell>
                           <TableCell>{formatTime(entry.endTime)}</TableCell>
                           <TableCell>{calculateDuration(entry.startTime, entry.endTime)}</TableCell>

@@ -4,20 +4,23 @@ import { useState, useEffect } from 'react';
 import { Play, Square } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { TimeEntry } from '@/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { TimeEntry, Employee, Location } from '@/types';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useToast } from '@/hooks/use-toast';
 
 interface TimeTrackerProps {
   onAddTimeEntry: (entry: Omit<TimeEntry, 'id'>) => void;
+  employees: Employee[];
+  locations: Location[];
 }
 
-export function TimeTracker({ onAddTimeEntry }: TimeTrackerProps) {
+export function TimeTracker({ onAddTimeEntry, employees, locations }: TimeTrackerProps) {
   const [isTracking, setIsTracking] = useLocalStorage<boolean>('isTracking', false);
   const [startTime, setStartTime] = useLocalStorage<string | null>('startTime', null);
-  const [employeeName, setEmployeeName] = useLocalStorage<string>('trackingEmployeeName', '');
+  const [employeeId, setEmployeeId] = useLocalStorage<string | undefined>('trackingEmployeeId', undefined);
+  const [locationId, setLocationId] = useLocalStorage<string | undefined>('trackingLocationId', undefined);
   const [elapsedTime, setElapsedTime] = useState('00:00:00');
   const { toast } = useToast();
 
@@ -42,11 +45,19 @@ export function TimeTracker({ onAddTimeEntry }: TimeTrackerProps) {
   }, [isTracking, startTime]);
 
   const handleStart = () => {
-    if (!employeeName.trim()) {
+    if (!employeeId) {
       toast({
         variant: 'destructive',
         title: 'Fehler',
-        description: 'Bitte geben Sie einen Mitarbeiternamen ein.',
+        description: 'Bitte wählen Sie einen Mitarbeiter aus.',
+      });
+      return;
+    }
+    if (!locationId) {
+      toast({
+        variant: 'destructive',
+        title: 'Fehler',
+        description: 'Bitte wählen Sie einen Arbeitsort aus.',
       });
       return;
     }
@@ -55,9 +66,10 @@ export function TimeTracker({ onAddTimeEntry }: TimeTrackerProps) {
   };
 
   const handleStop = () => {
-    if (startTime) {
+    if (startTime && employeeId && locationId) {
       onAddTimeEntry({
-        employeeName,
+        employeeId,
+        locationId,
         startTime,
         endTime: new Date().toISOString(),
       });
@@ -73,14 +85,26 @@ export function TimeTracker({ onAddTimeEntry }: TimeTrackerProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="employeeNameTracker">Mitarbeitername</Label>
-          <Input
-            id="employeeNameTracker"
-            placeholder="Max Mustermann"
-            value={employeeName}
-            onChange={(e) => setEmployeeName(e.target.value)}
-            disabled={isTracking}
-          />
+          <Label>Mitarbeiter</Label>
+          <Select value={employeeId} onValueChange={setEmployeeId} disabled={isTracking}>
+            <SelectTrigger>
+              <SelectValue placeholder="Mitarbeiter auswählen" />
+            </SelectTrigger>
+            <SelectContent>
+              {employees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Arbeitsort</Label>
+          <Select value={locationId} onValueChange={setLocationId} disabled={isTracking}>
+            <SelectTrigger>
+              <SelectValue placeholder="Arbeitsort auswählen" />
+            </SelectTrigger>
+            <SelectContent>
+              {locations.map(l => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex items-center justify-between p-4 bg-secondary rounded-lg">
           <span className="text-2xl font-mono text-secondary-foreground">{elapsedTime}</span>
