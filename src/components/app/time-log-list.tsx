@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format, parseISO, startOfDay } from 'date-fns';
-import { PlusCircle, Edit, Trash2, Loader2, CalendarDays } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, CalendarDays, Clock, MapPin } from 'lucide-react';
 import type { TimeEntry, Employee, Location } from '@/types';
 import {
   calculateDuration,
@@ -277,7 +277,53 @@ export function TimeLogList({
                     <CalendarDays className="h-5 w-5 text-muted-foreground" />
                     {formatDate(day)} - <span className="text-primary">{dailyTotal.toFixed(2)} Stunden</span>
                   </h3>
-                  <Table>
+                   <div className="md:hidden space-y-4">
+                    {dayEntries.map((entry) => (
+                      <div key={entry.id} className="border rounded-lg p-4 space-y-2">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium">{getEmployeeName(entry.employeeId)}</p>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <MapPin className="h-4 w-4" />
+                              <span>{getLocationName(entry.locationId)}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center">
+                            <Button variant="ghost" size="icon" onClick={() => openDialogForEdit(entry)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Diese Aktion kann nicht rückgängig gemacht werden. Dieser Zeiteintrag wird dauerhaft gelöscht.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => onDeleteEntry(entry.id)}>Löschen</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                           <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-muted-foreground" />
+                              <span>{formatTime(entry.startTime)} - {formatTime(entry.endTime)}</span>
+                           </div>
+                           <p className="font-medium">{calculateDuration(entry.startTime, entry.endTime)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <Table className="hidden md:table">
                     <TableHeader>
                       <TableRow>
                         <TableHead>Mitarbeiter</TableHead>
