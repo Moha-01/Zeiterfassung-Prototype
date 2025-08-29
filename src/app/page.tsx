@@ -53,6 +53,15 @@ export default function Home() {
   };
 
   const deleteLocation = (id: string) => {
+    const hasEntries = timeEntries.some((entry) => entry.locationId === id);
+    if (hasEntries) {
+       toast({
+        title: "Fehler beim Löschen",
+        description: "Arbeitsort kann nicht gelöscht werden, da noch Zeiteinträge vorhanden sind.",
+        variant: "destructive",
+      });
+      return;
+    }
     setLocations((prev) => prev.filter((location) => location.id !== id));
   };
 
@@ -69,7 +78,12 @@ export default function Home() {
               timeEntries={timeEntries}
               locations={locations}
             />
-            <LocationManagement locations={locations} onAddLocation={addLocation} onDeleteLocation={deleteLocation} />
+            <LocationManagement 
+              locations={locations} 
+              onAddLocation={addLocation} 
+              onDeleteLocation={deleteLocation}
+              timeEntries={timeEntries} 
+            />
           </div>
           <div className="lg:col-span-2">
             <TimeLogList
