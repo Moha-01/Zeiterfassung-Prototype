@@ -5,7 +5,6 @@ import { Header } from '@/components/app/header';
 import { TimeLogList } from '@/components/app/time-log-list';
 import { EmployeeManagement } from '@/components/app/employee-management';
 import { LocationManagement } from '@/components/app/location-management';
-import { TimeLogCalendar } from '@/components/app/time-log-calendar';
 import type { TimeEntry, Employee, Location } from '@/types';
 
 export default function Home() {
@@ -35,6 +34,8 @@ export default function Home() {
 
   const deleteEmployee = (id: string) => {
     setEmployees((prev) => prev.filter((employee) => employee.id !== id));
+    // Also remove time entries associated with the deleted employee
+    setTimeEntries((prev) => prev.filter((entry) => entry.employeeId !== id));
   };
   
   const addLocation = (location: Omit<Location, 'id'>) => {
@@ -52,8 +53,13 @@ export default function Home() {
         <Header />
         <main className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-1 space-y-8">
-            <TimeLogCalendar entries={timeEntries} employees={employees} locations={locations} />
-            <EmployeeManagement employees={employees} onAddEmployee={addEmployee} onDeleteEmployee={deleteEmployee} />
+            <EmployeeManagement 
+              employees={employees} 
+              onAddEmployee={addEmployee} 
+              onDeleteEmployee={deleteEmployee}
+              timeEntries={timeEntries}
+              locations={locations}
+            />
             <LocationManagement locations={locations} onAddLocation={addLocation} onDeleteLocation={deleteLocation} />
           </div>
           <div className="md:col-span-2">
