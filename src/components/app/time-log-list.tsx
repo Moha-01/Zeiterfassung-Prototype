@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format, parseISO, startOfDay, isSameDay } from 'date-fns';
-import { PlusCircle, Edit, Trash2, Loader2, CalendarDays, Clock, MapPin, Calendar as CalendarIcon, ChevronDown } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, CalendarDays, Clock, MapPin, Calendar as CalendarIcon, ChevronDown, User, Info } from 'lucide-react';
 import type { TimeEntry, Employee, Location } from '@/types';
 import {
   calculateDuration,
@@ -91,8 +91,10 @@ export function TimeLogList({
   onUpdateEntry,
   onDeleteEntry,
 }: TimeLogListProps) {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
+  const [selectedEntry, setSelectedEntry] = useState<TimeEntry | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
@@ -105,6 +107,7 @@ export function TimeLogList({
   const getLocationName = (locationId: string) => locations.find(l => l.id === locationId)?.name || 'Unbekannt';
 
   const openDialogForEdit = (entry: TimeEntry) => {
+    setIsDetailDialogOpen(false);
     setEditingEntry(entry);
     form.reset({
       employeeId: entry.employeeId,
@@ -112,9 +115,9 @@ export function TimeLogList({
       startTime: format(parseISO(entry.startTime), "yyyy-MM-dd'T'HH:mm"),
       endTime: format(parseISO(entry.endTime), "yyyy-MM-dd'T'HH:mm"),
     });
-    setIsDialogOpen(true);
+    setIsFormDialogOpen(true);
   };
-
+  
   const openDialogForAdd = () => {
     setEditingEntry(null);
     const now = new Date();
@@ -127,7 +130,12 @@ export function TimeLogList({
       startTime: format(startTime, "yyyy-MM-dd'T'HH:mm"),
       endTime: format(endTime, "yyyy-MM-dd'T'HH:mm"),
     });
-    setIsDialogOpen(true);
+    setIsFormDialogOpen(true);
+  };
+  
+  const openDialogForDetails = (entry: TimeEntry) => {
+    setSelectedEntry(entry);
+    setIsDetailDialogOpen(true);
   };
 
   const onSubmit = (values: z.infer<typeof timeEntrySchema>) => {
@@ -143,7 +151,7 @@ export function TimeLogList({
     } else {
       onAddEntry(entryData);
     }
-    setIsDialogOpen(false);
+    setIsFormDialogOpen(false);
   };
   
   const dayEntries = entries
@@ -160,7 +168,7 @@ export function TimeLogList({
             Eine Übersicht aller erfassten Arbeitszeiten.
           </CardDescription>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={openDialogForAdd}>
               <PlusCircle className="mr-2 h-4 w-4" /> Eintrag hinzufügen
@@ -291,7 +299,7 @@ export function TimeLogList({
                     <>
                         <div className="md:hidden space-y-4">
                           {dayEntries.map((entry) => (
-                            <div key={entry.id} className="border rounded-lg p-4 space-y-2">
+                            <div key={entry.id} className="border rounded-lg p-4 space-y-2 cursor-pointer hover:bg-muted/50" onClick={() => openDialogForDetails(entry)}>
                               <div className="flex justify-between items-start">
                                 <div>
                                   <p className="font-medium">{getEmployeeName(entry.employeeId)}</p>
@@ -299,30 +307,6 @@ export function TimeLogList({
                                     <MapPin className="h-4 w-4" />
                                     <span>{getLocationName(entry.locationId)}</span>
                                   </div>
-                                </div>
-                                <div className="flex items-center">
-                                  <Button variant="ghost" size="icon" onClick={() => openDialogForEdit(entry)}>
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <Button variant="ghost" size="icon">
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                      </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          Diese Aktion kann nicht rückgängig gemacht werden. Dieser Zeiteintrag wird dauerhaft gelöscht.
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => onDeleteEntry(entry.id)}>Löschen</AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
                                 </div>
                               </div>
                               <div className="flex justify-between items-center text-sm">
@@ -343,41 +327,16 @@ export function TimeLogList({
                               <TableHead>Start</TableHead>
                               <TableHead>Ende</TableHead>
                               <TableHead>Dauer</TableHead>
-                              <TableHead className="text-right">Aktionen</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {dayEntries.map((entry) => (
-                              <TableRow key={entry.id}>
+                              <TableRow key={entry.id} onClick={() => openDialogForDetails(entry)} className="cursor-pointer">
                                 <TableCell className="font-medium">{getEmployeeName(entry.employeeId)}</TableCell>
                                 <TableCell>{getLocationName(entry.locationId)}</TableCell>
                                 <TableCell>{formatTime(entry.startTime)}</TableCell>
                                 <TableCell>{formatTime(entry.endTime)}</TableCell>
                                 <TableCell>{calculateDuration(entry.startTime, entry.endTime)}</TableCell>
-                                <TableCell className="text-right">
-                                  <Button variant="ghost" size="icon" onClick={() => openDialogForEdit(entry)}>
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <Button variant="ghost" size="icon">
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                      </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          Diese Aktion kann nicht rückgängig gemacht werden. Dieser Zeiteintrag wird dauerhaft gelöscht.
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => onDeleteEntry(entry.id)}>Löschen</AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
-                                </TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
@@ -390,6 +349,90 @@ export function TimeLogList({
                  )}
             </div>
         </div>
+        
+        {/* Detail Dialog */}
+        <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+          <DialogContent>
+             {selectedEntry && (
+              <>
+                <DialogHeader>
+                  <DialogTitle>Eintrag Details</DialogTitle>
+                   <DialogDescription>
+                      Details für den ausgewählten Zeiteintrag.
+                   </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="flex items-center gap-4">
+                    <User className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Mitarbeiter</p>
+                      <p className="font-medium">{getEmployeeName(selectedEntry.employeeId)}</p>
+                    </div>
+                  </div>
+                   <div className="flex items-center gap-4">
+                    <MapPin className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Arbeitsort</p>
+                      <p className="font-medium">{getLocationName(selectedEntry.locationId)}</p>
+                    </div>
+                  </div>
+                   <div className="flex items-center gap-4">
+                    <CalendarDays className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Datum</p>
+                      <p className="font-medium">{formatDate(selectedEntry.startTime)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <Clock className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Zeit</p>
+                      <p className="font-medium">{formatTime(selectedEntry.startTime)} - {formatTime(selectedEntry.endTime)}</p>
+                    </div>
+                  </div>
+                   <div className="flex items-center gap-4">
+                    <Info className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Dauer</p>
+                      <p className="font-medium">{calculateDuration(selectedEntry.startTime, selectedEntry.endTime)}</p>
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter className='sm:justify-between'>
+                  <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                         <Button variant="destructive">
+                            <Trash2 className="mr-2 h-4 w-4" /> Löschen
+                         </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Diese Aktion kann nicht rückgängig gemacht werden. Dieser Zeiteintrag wird dauerhaft gelöscht.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => {
+                            onDeleteEntry(selectedEntry.id);
+                            setIsDetailDialogOpen(false);
+                          }}>Löschen</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  <div className='flex gap-2'>
+                    <Button type="button" variant="secondary" onClick={() => setIsDetailDialogOpen(false)}>Schließen</Button>
+                    <Button type="button" onClick={() => openDialogForEdit(selectedEntry)}>
+                        <Edit className="mr-2 h-4 w-4" /> Bearbeiten
+                    </Button>
+                  </div>
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+
       </CardContent>
     </Card>
   );
