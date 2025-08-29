@@ -2,10 +2,10 @@
 
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Header } from '@/components/app/header';
-import { TimeTracker } from '@/components/app/time-tracker';
 import { TimeLogList } from '@/components/app/time-log-list';
 import { EmployeeManagement } from '@/components/app/employee-management';
 import { LocationManagement } from '@/components/app/location-management';
+import { TimeLogCalendar } from '@/components/app/time-log-calendar';
 import type { TimeEntry, Employee, Location } from '@/types';
 
 export default function Home() {
@@ -52,7 +52,7 @@ export default function Home() {
         <Header />
         <main className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-1 space-y-8">
-            <TimeTracker onAddTimeEntry={addTimeEntry} employees={employees} locations={locations} />
+            <TimeLogCalendar entries={timeEntries} employees={employees} locations={locations} />
             <EmployeeManagement employees={employees} onAddEmployee={addEmployee} onDeleteEmployee={deleteEmployee} />
             <LocationManagement locations={locations} onAddLocation={addLocation} onDeleteLocation={deleteLocation} />
           </div>
