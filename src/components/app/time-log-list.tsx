@@ -50,6 +50,18 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+
 
 const timeEntrySchema = z.object({
   employeeId: z.string().min(1, 'Mitarbeiter ist erforderlich.'),
@@ -288,9 +300,25 @@ export function TimeLogList({
                             <Button variant="ghost" size="icon" onClick={() => openDialogForEdit(entry)}>
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => onDeleteEntry(entry.id)}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Diese Aktion kann nicht rückgängig gemacht werden. Dieser Zeiteintrag wird dauerhaft gelöscht.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => onDeleteEntry(entry.id)}>Löschen</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -303,7 +331,7 @@ export function TimeLogList({
         ) : (
           <div className="text-center py-10 text-muted-foreground">
             <p>Noch keine Zeiteinträge vorhanden.</p>
-            <p>Starten Sie den Timer oder fügen Sie manuell einen Eintrag hinzu.</p>
+            <p>Fügen Sie manuell einen neuen Eintrag hinzu.</p>
           </div>
         )}
       </CardContent>

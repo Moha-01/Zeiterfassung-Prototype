@@ -11,6 +11,17 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 const locationSchema = z.object({
   name: z.string().min(1, 'Name ist erforderlich.'),
@@ -83,15 +94,30 @@ export function LocationManagement({ locations, timeEntries, onAddLocation, onDe
                     <TableRow key={location.id}>
                       <TableCell>{location.name}</TableCell>
                       <TableCell className="text-right">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => onDeleteLocation(location.id)}
-                          disabled={hasEntries}
-                          aria-label={hasEntries ? "Arbeitsort hat noch Zeiteinträge" : "Arbeitsort löschen"}
-                        >
-                          <Trash2 className={`h-4 w-4 ${hasEntries ? 'text-muted-foreground' : 'text-destructive'}`} />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                             <Button 
+                              variant="ghost" 
+                              size="icon"
+                              disabled={hasEntries}
+                              aria-label={hasEntries ? "Arbeitsort hat noch Zeiteinträge" : "Arbeitsort löschen"}
+                            >
+                              <Trash2 className={`h-4 w-4 ${hasEntries ? 'text-muted-foreground' : 'text-destructive'}`} />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Diese Aktion kann nicht rückgängig gemacht werden. Der Arbeitsort wird dauerhaft gelöscht.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => onDeleteLocation(location.id)}>Löschen</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </TableCell>
                     </TableRow>
                   );

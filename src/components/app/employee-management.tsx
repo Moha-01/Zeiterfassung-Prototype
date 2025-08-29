@@ -14,6 +14,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { calculateDuration, formatDate } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 const employeeSchema = z.object({
   name: z.string().min(1, 'Name ist erforderlich.'),
@@ -92,15 +103,33 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                         <p className="font-medium">{employee.name}</p>
                       </div>
                     </CollapsibleTrigger>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={(e) => { e.stopPropagation(); onDeleteEmployee(employee.id); }}
-                      disabled={hasEntries}
-                      aria-label={hasEntries ? "Mitarbeiter hat noch Zeiteinträge" : "Mitarbeiter löschen"}
-                    >
-                      <Trash2 className={`h-4 w-4 ${hasEntries ? 'text-muted-foreground' : 'text-destructive'}`} />
-                    </Button>
+                    
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={hasEntries}
+                          aria-label={hasEntries ? "Mitarbeiter hat noch Zeiteinträge" : "Mitarbeiter löschen"}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Trash2 className={`h-4 w-4 ${hasEntries ? 'text-muted-foreground' : 'text-destructive'}`} />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Diese Aktion kann nicht rückgängig gemacht werden. Der Mitarbeiter wird dauerhaft gelöscht.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => onDeleteEmployee(employee.id)}>Löschen</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+
                   </div>
 
                   <CollapsibleContent>
