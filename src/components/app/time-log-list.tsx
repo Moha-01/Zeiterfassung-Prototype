@@ -5,12 +5,13 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format, parseISO, startOfDay, isSameDay } from 'date-fns';
-import { PlusCircle, Edit, Trash2, Loader2, CalendarDays, Clock, MapPin } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, CalendarDays, Clock, MapPin, Calendar as CalendarIcon } from 'lucide-react';
 import type { TimeEntry, Employee, Location } from '@/types';
 import {
   calculateDuration,
   formatDate,
   formatTime,
+  cn,
 } from '@/lib/utils';
 import {
   Card,
@@ -93,6 +94,8 @@ export function TimeLogList({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+
 
   const form = useForm<z.infer<typeof timeEntrySchema>>({
     resolver: zodResolver(timeEntrySchema),
@@ -254,20 +257,33 @@ export function TimeLogList({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-4">
-            <div className="mx-auto">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => setSelectedDate(date || startOfDay(new Date()))}
-                className="rounded-md border"
-                initialFocus
-              />
-            </div>
-            <div className="flex-1">
-                <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
-                    <CalendarDays className="h-5 w-5 text-muted-foreground" />
-                    {formatDate(selectedDate.toISOString())}
-                </h3>
+            <div className="flex-1 space-y-2">
+                 <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !selectedDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {selectedDate ? formatDate(selectedDate.toISOString()) : <span>Datum auswählen</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={(date) => {
+                        setSelectedDate(date || startOfDay(new Date()));
+                        setIsCalendarOpen(false);
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+
                  {dayEntries.length > 0 ? (
                     <>
                         <div className="md:hidden space-y-4">
