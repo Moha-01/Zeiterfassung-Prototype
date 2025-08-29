@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format, parseISO, startOfDay, isSameDay } from 'date-fns';
+import { format, parse, parseISO, startOfDay, isSameDay } from 'date-fns';
 import { PlusCircle, Edit, Trash2, Loader2, CalendarDays, Clock, MapPin, Calendar as CalendarIcon, ChevronDown, User, Info } from 'lucide-react';
 import type { TimeEntry, Employee, Location } from '@/types';
 import {
@@ -67,9 +67,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 const timeEntrySchema = z.object({
   employeeId: z.string().min(1, 'Mitarbeiter ist erforderlich.'),
   locationId: z.string().min(1, 'Arbeitsort ist erforderlich.'),
-  startTime: z.string().min(1, 'Startzeit ist erforderlich.'),
-  endTime: z.string().min(1, 'Endzeit ist erforderlich.'),
-}).refine(data => new Date(data.startTime) < new Date(data.endTime), {
+  startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Ungültiges Zeitformat (HH:mm)'),
+  endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Ungültiges Zeitformat (HH:mm)'),
+}).refine(data => {
+  const start = parse(data.startTime, 'HH:mm', new Date());
+  const end = parse(data.endTime, 'HH:mm', new Date());
+  return start < end;
+}, {
   message: 'Endzeit muss nach der Startzeit liegen.',
   path: ['endTime'],
 });
@@ -109,11 +113,12 @@ export function TimeLogList({
   const openDialogForEdit = (entry: TimeEntry) => {
     setIsDetailDialogOpen(false);
     setEditingEntry(entry);
+    setSelectedDate(startOfDay(parseISO(entry.startTime)));
     form.reset({
       employeeId: entry.employeeId,
       locationId: entry.locationId,
-      startTime: format(parseISO(entry.startTime), "yyyy-MM-dd'T'HH:mm"),
-      endTime: format(parseISO(entry.endTime), "yyyy-MM-dd'T'HH:mm"),
+      startTime: format(parseISO(entry.startTime), "HH:mm"),
+      endTime: format(parseISO(entry.endTime), "HH:mm"),
     });
     setIsFormDialogOpen(true);
   };
@@ -121,14 +126,14 @@ export function TimeLogList({
   const openDialogForAdd = () => {
     setEditingEntry(null);
     const now = new Date();
-    const startTime = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), now.getHours(), now.getMinutes());
-    const endTime = new Date(startTime.getTime() + 60 * 60 * 1000); // 1 hour later
+    const startTime = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
+    const endTime = now;
 
     form.reset({
       employeeId: '',
       locationId: '',
-      startTime: format(startTime, "yyyy-MM-dd'T'HH:mm"),
-      endTime: format(endTime, "yyyy-MM-dd'T'HH:mm"),
+      startTime: format(startTime, "HH:mm"),
+      endTime: format(endTime, "HH:mm"),
     });
     setIsFormDialogOpen(true);
   };
@@ -139,11 +144,21 @@ export function TimeLogList({
   };
 
   const onSubmit = (values: z.infer<typeof timeEntrySchema>) => {
+    const createDate = (time: string) => {
+        const [hours, minutes] = time.split(':').map(Number);
+        const date = new Date(selectedDate);
+        date.setHours(hours);
+        date.setMinutes(minutes);
+        date.setSeconds(0);
+        date.setMilliseconds(0);
+        return date.toISOString();
+    }
+    
     const entryData = {
       employeeId: values.employeeId,
       locationId: values.locationId,
-      startTime: new Date(values.startTime).toISOString(),
-      endTime: new Date(values.endTime).toISOString(),
+      startTime: createDate(values.startTime),
+      endTime: createDate(values.endTime),
     };
 
     if (editingEntry) {
@@ -223,32 +238,63 @@ export function TimeLogList({
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="startTime"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Startzeit</FormLabel>
-                      <FormControl>
-                        <Input type="datetime-local" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="endTime"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Endzeit</FormLabel>
-                      <FormControl>
-                        <Input type="datetime-local" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                 <FormItem>
+                    <FormLabel>Datum</FormLabel>
+                    <FormControl>
+                         <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                variant={"outline"}
+                                className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !selectedDate && "text-muted-foreground"
+                                )}
+                                >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {formatDate(selectedDate.toISOString())}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                mode="single"
+                                selected={selectedDate}
+                                onSelect={(date) => date && setSelectedDate(startOfDay(date))}
+                                initialFocus
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+
+                <div className="flex gap-4">
+                    <FormField
+                    control={form.control}
+                    name="startTime"
+                    render={({ field }) => (
+                        <FormItem className="flex-1">
+                        <FormLabel>Startzeit</FormLabel>
+                        <FormControl>
+                            <Input type="time" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="endTime"
+                    render={({ field }) => (
+                        <FormItem className="flex-1">
+                        <FormLabel>Endzeit</FormLabel>
+                        <FormControl>
+                            <Input type="time" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                </div>
                 <DialogFooter>
                   <DialogClose asChild>
                     <Button type="button" variant="secondary">Abbrechen</Button>
