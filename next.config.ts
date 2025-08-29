@@ -1,6 +1,6 @@
 import type {NextConfig} from 'next';
 
-const repo = process.env.GITHUB_REPOSITORY?.split('/')[1] || '';
+const repo = 'Zeiterfassung-Prototype';
 
 const nextConfig: NextConfig = {
   /* config options here */
