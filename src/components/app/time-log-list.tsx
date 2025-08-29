@@ -398,10 +398,10 @@ export function TimeLogList({
                     </div>
                   </div>
                 </div>
-                <DialogFooter className='sm:justify-between'>
-                  <AlertDialog>
+                <DialogFooter className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                   <AlertDialog>
                       <AlertDialogTrigger asChild>
-                         <Button variant="destructive">
+                         <Button variant="destructive" className="w-full">
                             <Trash2 className="mr-2 h-4 w-4" /> Löschen
                          </Button>
                       </AlertDialogTrigger>
@@ -421,12 +421,10 @@ export function TimeLogList({
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
-                  <div className='flex gap-2'>
-                    <Button type="button" variant="secondary" onClick={() => setIsDetailDialogOpen(false)}>Schließen</Button>
-                    <Button type="button" onClick={() => openDialogForEdit(selectedEntry)}>
+                    <Button type="button" variant="secondary" onClick={() => setIsDetailDialogOpen(false)} className="w-full">Schließen</Button>
+                    <Button type="button" onClick={() => openDialogForEdit(selectedEntry)} className="w-full">
                         <Edit className="mr-2 h-4 w-4" /> Bearbeiten
                     </Button>
-                  </div>
                 </DialogFooter>
               </>
             )}
