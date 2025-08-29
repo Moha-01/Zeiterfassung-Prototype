@@ -67,11 +67,12 @@ interface EmployeeManagementProps {
   onDeleteEmployee: (id: string) => void;
   onUpdateEntry: (entry: TimeEntry) => void;
   onDeleteEntry: (id: string) => void;
+  onDeleteAllEntries: (employeeId: string) => void;
 }
 
 const ENTRIES_PER_PAGE = 5;
 
-export function EmployeeManagement({ employees, timeEntries, locations, onAddEmployee, onDeleteEmployee, onUpdateEntry, onDeleteEntry }: EmployeeManagementProps) {
+export function EmployeeManagement({ employees, timeEntries, locations, onAddEmployee, onDeleteEmployee, onUpdateEntry, onDeleteEntry, onDeleteAllEntries }: EmployeeManagementProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -256,10 +257,34 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
 
                   <CollapsibleContent>
                     <div className="p-4 mt-2 border rounded-md">
-                      <h4 className="text-md font-semibold mb-2 flex items-center gap-2">
-                        <History className="h-5 w-5" />
-                        Arbeitshistorie
-                      </h4>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-md font-semibold flex items-center gap-2">
+                          <History className="h-5 w-5" />
+                          Arbeitshistorie
+                        </h4>
+                        {hasEntries && (
+                           <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                               <Button variant="destructive" size="sm">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Verlauf löschen
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Alle Zeiteinträge für diesen Mitarbeiter werden dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => onDeleteAllEntries(employee.id)}>Alles löschen</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
                       {hasEntries ? (
                         <>
                           <Table>

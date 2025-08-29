@@ -34,6 +34,10 @@ export default function Home() {
   const deleteTimeEntry = (id: string) => {
     setTimeEntries((prev) => prev.filter((entry) => entry.id !== id));
   };
+
+  const deleteTimeEntriesForEmployee = (employeeId: string) => {
+    setTimeEntries((prev) => prev.filter((entry) => entry.employeeId !== employeeId));
+  };
   
   const addEmployee = (employee: Omit<Employee, 'id'>) => {
     const newEmployee = { ...employee, id: crypto.randomUUID() };
@@ -85,6 +89,7 @@ export default function Home() {
                 locations={locations}
                 onUpdateEntry={updateTimeEntry}
                 onDeleteEntry={deleteTimeEntry}
+                onDeleteAllEntries={deleteTimeEntriesForEmployee}
               />
             </div>
             <div className="hidden md:block">
@@ -116,6 +121,7 @@ export default function Home() {
                   locations={locations}
                   onUpdateEntry={updateTimeEntry}
                   onDeleteEntry={deleteTimeEntry}
+                  onDeleteAllEntries={deleteTimeEntriesForEmployee}
                 />
               )}
               {activeView === 'locations' && (
