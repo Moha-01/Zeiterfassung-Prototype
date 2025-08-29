@@ -349,25 +349,22 @@ export function TimeLogList({
 
                  {dayEntries.length > 0 ? (
                     <>
-                        <div className="md:hidden space-y-4">
+                        <div className="md:hidden space-y-2">
                           {dayEntries.map((entry) => (
-                            <div key={entry.id} className="border rounded-lg p-4 space-y-2 cursor-pointer hover:bg-muted/50" onClick={() => openDialogForDetails(entry)}>
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <p className="font-medium">{getEmployeeName(entry.employeeId)}</p>
-                                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                    <MapPin className="h-4 w-4" />
-                                    <span>{getLocationName(entry.locationId)}</span>
-                                  </div>
-                                </div>
-                                 <button onClick={(e) => togglePaidStatus(entry, e)} className="p-1 -m-1">
-                                    {entry.paid ? <DollarSign className="h-5 w-5 text-green-500" /> : <DollarSign className="h-5 w-5 text-destructive" />}
-                                  </button>
+                           <div key={entry.id} className="border rounded-lg p-3 space-y-1.5 cursor-pointer hover:bg-muted/50" onClick={() => openDialogForDetails(entry)}>
+                              <div className="flex justify-between items-center">
+                                <p className="font-medium truncate">
+                                  {getEmployeeName(entry.employeeId)}
+                                  <span className="text-muted-foreground font-normal"> @ {getLocationName(entry.locationId)}</span>
+                                </p>
+                                <button onClick={(e) => togglePaidStatus(entry, e)} className="p-1 -m-1">
+                                  {entry.paid ? <DollarSign className="h-5 w-5 text-green-500" /> : <DollarSign className="h-5 w-5 text-destructive" />}
+                                </button>
                               </div>
                               <div className="flex justify-between items-center text-sm">
-                                <div className="flex items-center gap-2">
-                                    <Clock className="h-4 w-4 text-muted-foreground" />
-                                    <span>{formatTime(entry.startTime)} - {formatTime(entry.endTime)}</span>
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                  <Clock className="h-4 w-4" />
+                                  <span>{formatTime(entry.startTime)} - {formatTime(entry.endTime)}</span>
                                 </div>
                                 <p className="font-medium">{calculateDuration(entry.startTime, entry.endTime)}</p>
                               </div>
