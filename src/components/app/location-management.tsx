@@ -67,7 +67,7 @@ export function LocationManagement({ locations, timeEntries, onAddLocation, onDe
                 <FormItem className="flex-grow">
                   <FormLabel>Ortsname</FormLabel>
                   <FormControl>
-                    <Input placeholder="Büro, Home Office..." {...field} />
+                    <Input placeholder="z.B. Stadt, Adresse, Name" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -75,7 +75,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                 <FormItem className="flex-grow">
                   <FormLabel>Mitarbeitername</FormLabel>
                   <FormControl>
-                    <Input placeholder="Max Mustermann" {...field} />
+                    <Input placeholder="z.B. Max Mustermann" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
