@@ -321,9 +321,9 @@ export function TimeLogList({
                  <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                   <PopoverTrigger asChild>
                     <Button
-                      variant={"outline"}
+                      variant={"secondary"}
                       className={cn(
-                        "w-full justify-between text-left font-normal",
+                        "w-full justify-between text-left font-semibold",
                         !selectedDate && "text-muted-foreground"
                       )}
                     >
