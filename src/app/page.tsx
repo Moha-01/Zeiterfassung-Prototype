@@ -6,11 +6,13 @@ import { TimeLogList } from '@/components/app/time-log-list';
 import { EmployeeManagement } from '@/components/app/employee-management';
 import { LocationManagement } from '@/components/app/location-management';
 import type { TimeEntry, Employee, Location } from '@/types';
+import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
   const [timeEntries, setTimeEntries] = useLocalStorage<TimeEntry[]>('timeEntries', []);
   const [employees, setEmployees] = useLocalStorage<Employee[]>('employees', []);
   const [locations, setLocations] = useLocalStorage<Location[]>('locations', []);
+  const { toast } = useToast();
 
   const addTimeEntry = (entry: Omit<TimeEntry, 'id'>) => {
     const newEntry = { ...entry, id: crypto.randomUUID() };
@@ -33,9 +35,16 @@ export default function Home() {
   };
 
   const deleteEmployee = (id: string) => {
+    const hasEntries = timeEntries.some((entry) => entry.employeeId === id);
+    if (hasEntries) {
+      toast({
+        title: "Fehler beim Löschen",
+        description: "Mitarbeiter kann nicht gelöscht werden, da noch Zeiteinträge vorhanden sind.",
+        variant: "destructive",
+      });
+      return;
+    }
     setEmployees((prev) => prev.filter((employee) => employee.id !== id));
-    // Also remove time entries associated with the deleted employee
-    setTimeEntries((prev) => prev.filter((entry) => entry.employeeId !== id));
   };
   
   const addLocation = (location: Omit<Location, 'id'>) => {

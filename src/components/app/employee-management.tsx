@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Users, PlusCircle, Trash2, Loader2, History, XCircle } from 'lucide-react';
+import { Users, PlusCircle, Trash2, Loader2, History } from 'lucide-react';
 import type { Employee, TimeEntry, Location } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -81,6 +81,8 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
               const employeeWorkHistory = timeEntries
                 .filter((entry) => entry.employeeId === employee.id)
                 .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+              
+              const hasEntries = employeeWorkHistory.length > 0;
 
               return (
                 <Collapsible key={employee.id} onOpenChange={(isOpen) => setSelectedEmployeeId(isOpen ? employee.id : null)} open={selectedEmployeeId === employee.id}>
@@ -90,8 +92,14 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                         <p className="font-medium">{employee.name}</p>
                       </div>
                     </CollapsibleTrigger>
-                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onDeleteEmployee(employee.id); }}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={(e) => { e.stopPropagation(); onDeleteEmployee(employee.id); }}
+                      disabled={hasEntries}
+                      aria-label={hasEntries ? "Mitarbeiter hat noch Zeiteinträge" : "Mitarbeiter löschen"}
+                    >
+                      <Trash2 className={`h-4 w-4 ${hasEntries ? 'text-muted-foreground' : 'text-destructive'}`} />
                     </Button>
                   </div>
 
@@ -101,7 +109,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                         <History className="h-5 w-5" />
                         Arbeitshistorie
                       </h4>
-                      {employeeWorkHistory.length > 0 ? (
+                      {hasEntries ? (
                         <ScrollArea className="h-64">
                           <Table>
                             <TableHeader>
