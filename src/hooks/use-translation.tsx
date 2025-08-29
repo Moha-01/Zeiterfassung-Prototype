@@ -44,14 +44,24 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }, [language, isMounted]);
 
   const t = (key: string): string => {
+    // Fallback to the key itself if the translation is not found
     return translations[language]?.[key] || key;
   };
   
   const dir = useMemo(() => (language === 'ar' ? 'rtl' : 'ltr'), [language]);
 
+  const initialLang = typeof window !== 'undefined' ? (localStorage.getItem('language')?.replace(/"/g, '') || 'ar') : 'ar';
+  const initialDir = initialLang === 'ar' ? 'rtl' : 'ltr';
+
+
   if (!isMounted) {
       return (
-        <html lang="ar" dir="rtl">
+        <html lang={initialLang} dir={initialDir}>
+            <head>
+              <link rel="preconnect" href="https://fonts.googleapis.com" />
+              <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+              <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet" />
+            </head>
             <body></body>
         </html>
       );
@@ -59,9 +69,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t, languages, dir }}>
-        <html lang={language} dir={dir}>
          {children}
-        </html>
     </LanguageContext.Provider>
   );
 }

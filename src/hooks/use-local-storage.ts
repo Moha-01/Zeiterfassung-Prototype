@@ -1,32 +1,39 @@
 import { useState, useEffect } from 'react';
 
+// This custom hook now initializes the state from localStorage synchronously
+// on the client-side to prevent data loss on refresh or re-render.
+// It also ensures that the server-render and the first client-render match
+// to avoid hydration errors.
 export function useLocalStorage<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
-  const [value, setValue] = useState<T>(initialValue);
+    // A function to get the value from localStorage, or the initial value.
+    const getInitialValue = (): T => {
+        // Since localStorage is not available on the server, we return the initial value.
+        if (typeof window === 'undefined') {
+            return initialValue;
+        }
+        try {
+            const item = window.localStorage.getItem(key);
+            return item ? JSON.parse(item) : initialValue;
+        } catch (error) {
+            console.error('Error reading from localStorage', error);
+            return initialValue;
+        }
+    };
+    
+    // Set the initial state from localStorage.
+    const [value, setValue] = useState<T>(getInitialValue);
 
-  useEffect(() => {
-    // This effect runs only on the client, after the initial render.
-    let currentValue: T;
-    try {
-      const item = window.localStorage.getItem(key);
-      currentValue = item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      currentValue = initialValue;
-      console.error('Error reading from localStorage', error);
-    }
-    setValue(currentValue);
-  // The empty dependency array ensures this effect runs only once on mount.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-
-  useEffect(() => {
     // This effect runs whenever the value changes, to keep localStorage in sync.
-    try {
-      window.localStorage.setItem(key, JSON.stringify(value));
-    } catch (error) {
-      console.error('Error writing to localStorage', error);
-    }
-  }, [key, value]);
+    useEffect(() => {
+        try {
+            // We still need to check for window because this could run in a non-browser environment.
+            if (typeof window !== 'undefined') {
+                window.localStorage.setItem(key, JSON.stringify(value));
+            }
+        } catch (error) {
+            console.error('Error writing to localStorage', error);
+        }
+    }, [key, value]);
 
-  return [value, setValue];
+    return [value, setValue];
 }
