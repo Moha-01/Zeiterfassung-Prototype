@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format, parse, parseISO, startOfDay, isSameDay } from 'date-fns';
-import { PlusCircle, Edit, Trash2, Loader2, CalendarDays, Clock, MapPin, Calendar as CalendarIcon, ChevronDown, User, Info } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, CalendarDays, Clock, MapPin, Calendar as CalendarIcon, ChevronDown, User, Info, Check } from 'lucide-react';
 import type { TimeEntry, Employee, Location } from '@/types';
 import {
   calculateDuration,
@@ -62,6 +62,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
 
 
 const timeEntrySchema = z.object({
@@ -82,7 +83,7 @@ interface TimeLogListProps {
   entries: TimeEntry[];
   employees: Employee[];
   locations: Location[];
-  onAddEntry: (entry: Omit<TimeEntry, 'id'>) => void;
+  onAddEntry: (entry: Omit<TimeEntry, 'id' | 'paid'>) => void;
   onUpdateEntry: (entry: TimeEntry) => void;
   onDeleteEntry: (id: string) => void;
 }
@@ -162,7 +163,7 @@ export function TimeLogList({
     };
 
     if (editingEntry) {
-      onUpdateEntry({ ...entryData, id: editingEntry.id });
+      onUpdateEntry({ ...entryData, id: editingEntry.id, paid: editingEntry.paid });
     } else {
       onAddEntry(entryData);
     }
@@ -354,6 +355,7 @@ export function TimeLogList({
                                     <span>{getLocationName(entry.locationId)}</span>
                                   </div>
                                 </div>
+                                 {entry.paid && <Check className="h-5 w-5 text-green-500" />}
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <div className="flex items-center gap-2">
@@ -373,6 +375,7 @@ export function TimeLogList({
                               <TableHead>Start</TableHead>
                               <TableHead>Ende</TableHead>
                               <TableHead>Dauer</TableHead>
+                              <TableHead>Bezahlt</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -383,6 +386,9 @@ export function TimeLogList({
                                 <TableCell>{formatTime(entry.startTime)}</TableCell>
                                 <TableCell>{formatTime(entry.endTime)}</TableCell>
                                 <TableCell>{calculateDuration(entry.startTime, entry.endTime)}</TableCell>
+                                <TableCell>
+                                    {entry.paid && <Check className="h-5 w-5 text-green-500" />}
+                                </TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
@@ -443,6 +449,23 @@ export function TimeLogList({
                       <p className="font-medium">{calculateDuration(selectedEntry.startTime, selectedEntry.endTime)}</p>
                     </div>
                   </div>
+                  <div className="flex items-center space-x-2 pt-4">
+                    <Checkbox
+                        id="paid"
+                        checked={selectedEntry.paid}
+                        onCheckedChange={(checked) => {
+                            const newEntry = { ...selectedEntry, paid: !!checked };
+                            onUpdateEntry(newEntry);
+                            setSelectedEntry(newEntry);
+                        }}
+                    />
+                    <label
+                        htmlFor="paid"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                        Als bezahlt markieren
+                    </label>
+                 </div>
                 </div>
                 <DialogFooter className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                    <AlertDialog>

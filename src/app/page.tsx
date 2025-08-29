@@ -20,8 +20,8 @@ export default function Home() {
   const [activeView, setActiveView] = useState<View>('time');
 
 
-  const addTimeEntry = (entry: Omit<TimeEntry, 'id'>) => {
-    const newEntry = { ...entry, id: crypto.randomUUID() };
+  const addTimeEntry = (entry: Omit<TimeEntry, 'id' | 'paid'>) => {
+    const newEntry = { ...entry, id: crypto.randomUUID(), paid: false };
     setTimeEntries((prev) => [newEntry, ...prev]);
   };
 

@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format, parse, parseISO, startOfDay } from 'date-fns';
-import { Users, PlusCircle, Trash2, Loader2, History, Edit, Calendar as CalendarIcon, MapPin, CalendarDays, Clock, Info } from 'lucide-react';
+import { Users, PlusCircle, Trash2, Loader2, History, Edit, Calendar as CalendarIcon, MapPin, CalendarDays, Clock, Info, Check } from 'lucide-react';
 import type { Employee, TimeEntry, Location } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,6 +38,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const employeeSchema = z.object({
   name: z.string().min(1, 'Name ist erforderlich.'),
@@ -118,7 +119,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
     };
 
     if (editingEntry) {
-      onUpdateEntry({ ...entryData, id: editingEntry.id });
+      onUpdateEntry({ ...entryData, id: editingEntry.id, paid: editingEntry.paid });
     }
     setIsEditFormDialogOpen(false);
   }
@@ -207,7 +208,11 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
 
               return (
                 <Collapsible key={employee.id} onOpenChange={(isOpen) => {
-                  setSelectedEmployeeId(isOpen ? employee.id : null);
+                  if (selectedEmployeeId === employee.id && !isOpen) {
+                     setSelectedEmployeeId(null);
+                  } else if (isOpen) {
+                    setSelectedEmployeeId(employee.id);
+                  }
                   setCurrentPage(1);
                 }} open={selectedEmployeeId === employee.id}>
                   <div className={`flex items-center justify-between rounded-md border p-2 ${selectedEmployeeId === employee.id ? 'bg-secondary' : ''}`}>
@@ -258,6 +263,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                                 <TableHead>Datum</TableHead>
                                 <TableHead>Ort</TableHead>
                                 <TableHead>Dauer</TableHead>
+                                <TableHead>Bezahlt</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -266,6 +272,9 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                                    <TableCell>{formatDate(entry.startTime)}</TableCell>
                                    <TableCell>{getLocationName(entry.locationId)}</TableCell>
                                    <TableCell>{calculateDuration(entry.startTime, entry.endTime)}</TableCell>
+                                   <TableCell>
+                                     {entry.paid && <Check className="h-5 w-5 text-green-500" />}
+                                   </TableCell>
                                  </TableRow>
                               ))}
                             </TableBody>
@@ -431,7 +440,14 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
         </Dialog>
 
         {/* Detail Dialog */}
-        <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+        <Dialog open={isDetailDialogOpen} onOpenChange={(isOpen) => {
+            setIsDetailDialogOpen(isOpen)
+            if (!isOpen) {
+               const currentEmployee = selectedEmployeeId;
+               setSelectedEmployeeId(null); // Force re-render
+               setTimeout(() => setSelectedEmployeeId(currentEmployee), 0)
+            }
+        }}>
           <DialogContent>
              {selectedEntry && (
               <>
@@ -470,6 +486,23 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                       <p className="font-medium">{calculateDuration(selectedEntry.startTime, selectedEntry.endTime)}</p>
                     </div>
                   </div>
+                  <div className="flex items-center space-x-2 pt-4">
+                    <Checkbox
+                        id="paid"
+                        checked={selectedEntry.paid}
+                        onCheckedChange={(checked) => {
+                            const newEntry = { ...selectedEntry, paid: !!checked };
+                            onUpdateEntry(newEntry);
+                            setSelectedEntry(newEntry);
+                        }}
+                    />
+                    <label
+                        htmlFor="paid"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                        Als bezahlt markieren
+                    </label>
+                 </div>
                 </div>
                 <DialogFooter className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                    <AlertDialog>

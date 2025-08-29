@@ -4,6 +4,7 @@ export type TimeEntry = {
   locationId: string;
   startTime: string; // ISO string
   endTime: string; // ISO string
+  paid: boolean;
 };
 
 export type Employee = {
