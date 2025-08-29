@@ -351,12 +351,12 @@ export function TimeLogList({
                     <>
                         <div className="md:hidden space-y-2">
                           {dayEntries.map((entry) => (
-                           <div key={entry.id} className="border rounded-lg p-3 space-y-1.5 cursor-pointer hover:bg-muted/50" onClick={() => openDialogForDetails(entry)}>
-                              <div className="flex justify-between items-center">
-                                <p className="font-medium truncate">
-                                  {getEmployeeName(entry.employeeId)}
-                                  <span className="text-muted-foreground font-normal"> @ {getLocationName(entry.locationId)}</span>
-                                </p>
+                           <div key={entry.id} className="border rounded-lg p-3 space-y-2 cursor-pointer hover:bg-muted/50" onClick={() => openDialogForDetails(entry)}>
+                              <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="font-medium">{getEmployeeName(entry.employeeId)}</p>
+                                    <p className="text-sm text-muted-foreground">{getLocationName(entry.locationId)}</p>
+                                </div>
                                 <button onClick={(e) => togglePaidStatus(entry, e)} className="p-1 -m-1 border rounded-md">
                                   {entry.paid ? <DollarSign className="h-5 w-5 text-green-500" /> : <DollarSign className="h-5 w-5 text-destructive" />}
                                 </button>
