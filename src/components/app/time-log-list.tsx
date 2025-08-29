@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format, parse, parseISO, startOfDay, isSameDay } from 'date-fns';
-import { PlusCircle, Edit, Trash2, Loader2, CalendarDays, Clock, MapPin, Calendar as CalendarIcon, ChevronDown, User, Info, Check, X } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, CalendarDays, Clock, MapPin, Calendar as CalendarIcon, ChevronDown, User, Info, DollarSign } from 'lucide-react';
 import type { TimeEntry, Employee, Location } from '@/types';
 import {
   calculateDuration,
@@ -355,7 +355,7 @@ export function TimeLogList({
                                     <span>{getLocationName(entry.locationId)}</span>
                                   </div>
                                 </div>
-                                 {entry.paid ? <Check className="h-5 w-5 text-green-500" /> : <X className="h-5 w-5 text-destructive" />}
+                                 {entry.paid ? <DollarSign className="h-5 w-5 text-green-500" /> : <DollarSign className="h-5 w-5 text-destructive" />}
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <div className="flex items-center gap-2">
@@ -387,7 +387,7 @@ export function TimeLogList({
                                 <TableCell>{formatTime(entry.endTime)}</TableCell>
                                 <TableCell>{calculateDuration(entry.startTime, entry.endTime)}</TableCell>
                                 <TableCell>
-                                    {entry.paid ? <Check className="h-5 w-5 text-green-500" /> : <X className="h-5 w-5 text-destructive" />}
+                                    {entry.paid ? <DollarSign className="h-5 w-5 text-green-500" /> : <DollarSign className="h-5 w-5 text-destructive" />}
                                 </TableCell>
                               </TableRow>
                             ))}
