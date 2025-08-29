@@ -83,6 +83,8 @@ export default function Home() {
                 onDeleteEmployee={deleteEmployee}
                 timeEntries={timeEntries}
                 locations={locations}
+                onUpdateEntry={updateTimeEntry}
+                onDeleteEntry={deleteTimeEntry}
               />
             </div>
             <div className="hidden md:block">
@@ -112,6 +114,8 @@ export default function Home() {
                   onDeleteEmployee={deleteEmployee}
                   timeEntries={timeEntries}
                   locations={locations}
+                  onUpdateEntry={updateTimeEntry}
+                  onDeleteEntry={deleteTimeEntry}
                 />
               )}
               {activeView === 'locations' && (
