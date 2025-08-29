@@ -16,7 +16,7 @@ export function formatDateTime(isoString: string) {
 export function formatDate(isoString: string) {
   if (!isoString) return ''
   const date = parseISO(isoString)
-  return format(date, "EEEE, dd. MMMM yyyy", { locale: de })
+  return format(date, "dd.MM.yyyy", { locale: de })
 }
 
 export function formatTime(isoString: string) {
