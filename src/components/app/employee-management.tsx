@@ -303,7 +303,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                                    <TableCell>{getLocationName(entry.locationId)}</TableCell>
                                    <TableCell>{calculateDuration(entry.startTime, entry.endTime)}</TableCell>
                                    <TableCell>
-                                    <button onClick={(e) => togglePaidStatus(entry, e)} className="p-1">
+                                    <button onClick={(e) => togglePaidStatus(entry, e)} className="p-1 border rounded-md">
                                       {entry.paid ? <DollarSign className="h-5 w-5 text-green-500" /> : <DollarSign className="h-5 w-5 text-destructive" />}
                                     </button>
                                    </TableCell>
