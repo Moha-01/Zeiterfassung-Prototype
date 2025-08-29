@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format, parseISO, startOfDay, isSameDay } from 'date-fns';
-import { PlusCircle, Edit, Trash2, Loader2, CalendarDays, Clock, MapPin, Calendar as CalendarIcon } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, CalendarDays, Clock, MapPin, Calendar as CalendarIcon, ChevronDown } from 'lucide-react';
 import type { TimeEntry, Employee, Location } from '@/types';
 import {
   calculateDuration,
@@ -263,12 +263,15 @@ export function TimeLogList({
                     <Button
                       variant={"outline"}
                       className={cn(
-                        "w-full justify-start text-left font-normal",
+                        "w-full justify-between text-left font-normal",
                         !selectedDate && "text-muted-foreground"
                       )}
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {selectedDate ? formatDate(selectedDate.toISOString()) : <span>Datum auswählen</span>}
+                      <div className="flex items-center">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {selectedDate ? formatDate(selectedDate.toISOString()) : <span>Datum auswählen</span>}
+                      </div>
+                      <ChevronDown className="h-4 w-4 opacity-50" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
