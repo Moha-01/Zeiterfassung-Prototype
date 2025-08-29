@@ -1,18 +1,24 @@
 'use client';
 
+import { useState } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Header } from '@/components/app/header';
 import { TimeLogList } from '@/components/app/time-log-list';
 import { EmployeeManagement } from '@/components/app/employee-management';
 import { LocationManagement } from '@/components/app/location-management';
+import { BottomNavbar } from '@/components/app/bottom-navbar';
 import type { TimeEntry, Employee, Location } from '@/types';
 import { useToast } from "@/hooks/use-toast";
+
+export type View = 'time' | 'employees' | 'locations';
 
 export default function Home() {
   const [timeEntries, setTimeEntries] = useLocalStorage<TimeEntry[]>('timeEntries', []);
   const [employees, setEmployees] = useLocalStorage<Employee[]>('employees', []);
   const [locations, setLocations] = useLocalStorage<Location[]>('locations', []);
   const { toast } = useToast();
+  const [activeView, setActiveView] = useState<View>('time');
+
 
   const addTimeEntry = (entry: Omit<TimeEntry, 'id'>) => {
     const newEntry = { ...entry, id: crypto.randomUUID() };
@@ -66,33 +72,70 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="max-w-7xl mx-auto space-y-8 p-4 md:p-8 pb-24 md:pb-8">
         <Header />
-        <main className="flex flex-col gap-8">
-            <EmployeeManagement 
-              employees={employees} 
-              onAddEmployee={addEmployee} 
-              onDeleteEmployee={deleteEmployee}
-              timeEntries={timeEntries}
-              locations={locations}
-            />
-            <LocationManagement 
-              locations={locations} 
-              onAddLocation={addLocation} 
-              onDeleteLocation={deleteLocation}
-              timeEntries={timeEntries} 
-            />
-            <TimeLogList
-              entries={timeEntries}
-              employees={employees}
-              locations={locations}
-              onAddEntry={addTimeEntry}
-              onUpdateEntry={updateTimeEntry}
-              onDeleteEntry={deleteTimeEntry}
-            />
+        <main className="space-y-8">
+            <div className="hidden md:block">
+              <EmployeeManagement 
+                employees={employees} 
+                onAddEmployee={addEmployee} 
+                onDeleteEmployee={deleteEmployee}
+                timeEntries={timeEntries}
+                locations={locations}
+              />
+            </div>
+            <div className="hidden md:block">
+              <LocationManagement 
+                locations={locations} 
+                onAddLocation={addLocation} 
+                onDeleteLocation={deleteLocation}
+                timeEntries={timeEntries} 
+              />
+            </div>
+             <div className="hidden md:block">
+              <TimeLogList
+                entries={timeEntries}
+                employees={employees}
+                locations={locations}
+                onAddEntry={addTimeEntry}
+                onUpdateEntry={updateTimeEntry}
+                onDeleteEntry={deleteTimeEntry}
+              />
+            </div>
+
+            <div className="md:hidden">
+              {activeView === 'employees' && (
+                <EmployeeManagement 
+                  employees={employees} 
+                  onAddEmployee={addEmployee} 
+                  onDeleteEmployee={deleteEmployee}
+                  timeEntries={timeEntries}
+                  locations={locations}
+                />
+              )}
+              {activeView === 'locations' && (
+                <LocationManagement 
+                  locations={locations} 
+                  onAddLocation={addLocation} 
+                  onDeleteLocation={deleteLocation}
+                  timeEntries={timeEntries} 
+                />
+              )}
+              {activeView === 'time' && (
+                <TimeLogList
+                  entries={timeEntries}
+                  employees={employees}
+                  locations={locations}
+                  onAddEntry={addTimeEntry}
+                  onUpdateEntry={updateTimeEntry}
+                  onDeleteEntry={deleteTimeEntry}
+                />
+              )}
+            </div>
         </main>
       </div>
+      <BottomNavbar activeView={activeView} setActiveView={setActiveView} />
     </div>
   );
 }
