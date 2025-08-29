@@ -145,6 +145,11 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
 
   const getLocationName = (locationId: string) => locations.find((l) => l.id === locationId)?.name || 'Unbekannt';
 
+  const togglePaidStatus = (entry: TimeEntry, event: React.MouseEvent) => {
+    event.stopPropagation();
+    onUpdateEntry({ ...entry, paid: !entry.paid });
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -273,7 +278,9 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                                    <TableCell>{getLocationName(entry.locationId)}</TableCell>
                                    <TableCell>{calculateDuration(entry.startTime, entry.endTime)}</TableCell>
                                    <TableCell>
-                                     {entry.paid ? <DollarSign className="h-5 w-5 text-green-500" /> : <DollarSign className="h-5 w-5 text-destructive" />}
+                                    <button onClick={(e) => togglePaidStatus(entry, e)} className="p-1">
+                                      {entry.paid ? <DollarSign className="h-5 w-5 text-green-500" /> : <DollarSign className="h-5 w-5 text-destructive" />}
+                                    </button>
                                    </TableCell>
                                  </TableRow>
                               ))}

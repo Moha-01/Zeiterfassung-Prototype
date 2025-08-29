@@ -174,6 +174,11 @@ export function TimeLogList({
     .filter((entry) => isSameDay(parseISO(entry.startTime), selectedDate))
     .sort((a, b) => parseISO(b.startTime).getTime() - parseISO(a.startTime).getTime());
 
+  const togglePaidStatus = (entry: TimeEntry, event: React.MouseEvent) => {
+    event.stopPropagation();
+    onUpdateEntry({ ...entry, paid: !entry.paid });
+  };
+
 
   return (
     <Card>
@@ -355,7 +360,9 @@ export function TimeLogList({
                                     <span>{getLocationName(entry.locationId)}</span>
                                   </div>
                                 </div>
-                                 {entry.paid ? <DollarSign className="h-5 w-5 text-green-500" /> : <DollarSign className="h-5 w-5 text-destructive" />}
+                                 <button onClick={(e) => togglePaidStatus(entry, e)} className="p-1 -m-1">
+                                    {entry.paid ? <DollarSign className="h-5 w-5 text-green-500" /> : <DollarSign className="h-5 w-5 text-destructive" />}
+                                  </button>
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <div className="flex items-center gap-2">
@@ -387,7 +394,9 @@ export function TimeLogList({
                                 <TableCell>{formatTime(entry.endTime)}</TableCell>
                                 <TableCell>{calculateDuration(entry.startTime, entry.endTime)}</TableCell>
                                 <TableCell>
+                                   <button onClick={(e) => togglePaidStatus(entry, e)} className="p-1">
                                     {entry.paid ? <DollarSign className="h-5 w-5 text-green-500" /> : <DollarSign className="h-5 w-5 text-destructive" />}
+                                  </button>
                                 </TableCell>
                               </TableRow>
                             ))}
