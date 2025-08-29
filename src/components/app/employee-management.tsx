@@ -5,14 +5,14 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format, parse, parseISO, startOfDay } from 'date-fns';
-import { Users, PlusCircle, Trash2, Loader2, History, Edit, Calendar as CalendarIcon, MapPin, Clock } from 'lucide-react';
+import { Users, PlusCircle, Trash2, Loader2, History, Edit, Calendar as CalendarIcon, MapPin } from 'lucide-react';
 import type { Employee, TimeEntry, Location } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { calculateDuration, formatDate, cn, formatTime } from '@/lib/utils';
+import { calculateDuration, formatDate, cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   AlertDialog,
@@ -33,6 +33,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogClose,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -73,8 +74,8 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-
-  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
+  const [isAddFormOpen, setIsAddFormOpen] = useState(false);
+  const [isEditFormDialogOpen, setIsEditFormDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
 
@@ -92,6 +93,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
     onAddEmployee({ name: values.name });
     employeeForm.reset();
     setIsSubmitting(false);
+    setIsAddFormOpen(false);
   }
 
   function onTimeEntrySubmit(values: z.infer<typeof timeEntrySchema>) {
@@ -115,7 +117,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
     if (editingEntry) {
       onUpdateEntry({ ...entryData, id: editingEntry.id });
     }
-    setIsFormDialogOpen(false);
+    setIsEditFormDialogOpen(false);
   }
   
   const openDialogForEdit = (entry: TimeEntry) => {
@@ -127,41 +129,61 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
       startTime: format(parseISO(entry.startTime), "HH:mm"),
       endTime: format(parseISO(entry.endTime), "HH:mm"),
     });
-    setIsFormDialogOpen(true);
+    setIsEditFormDialogOpen(true);
   };
 
   const getLocationName = (locationId: string) => locations.find((l) => l.id === locationId)?.name || 'Unbekannt';
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Users className="h-6 w-6" />
-          Mitarbeiter verwalten
-        </CardTitle>
-        <CardDescription>Fügen Sie neue Mitarbeiter hinzu oder sehen Sie ihre Arbeitszeiten ein.</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-6 w-6" />
+            Mitarbeiter verwalten
+          </CardTitle>
+          <CardDescription>Fügen Sie neue Mitarbeiter hinzu oder sehen Sie ihre Arbeitszeiten ein.</CardDescription>
+        </div>
+        <Dialog open={isAddFormOpen} onOpenChange={setIsAddFormOpen}>
+          <DialogTrigger asChild>
+             <Button>
+              <PlusCircle className="mr-2 h-4 w-4" /> Mitarbeiter
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Neuen Mitarbeiter hinzufügen</DialogTitle>
+            </DialogHeader>
+             <Form {...employeeForm}>
+              <form onSubmit={employeeForm.handleSubmit(onEmployeeSubmit)} className="space-y-4">
+                <FormField
+                  control={employeeForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Mitarbeitername</FormLabel>
+                      <FormControl>
+                        <Input placeholder="z.B. Max Mustermann" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button type="button" variant="secondary">Abbrechen</Button>
+                  </DialogClose>
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Speichern
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </CardHeader>
       <CardContent>
-        <Form {...employeeForm}>
-          <form onSubmit={employeeForm.handleSubmit(onEmployeeSubmit)} className="flex items-end gap-2 mb-4">
-            <FormField
-              control={employeeForm.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem className="flex-grow">
-                  <FormLabel>Mitarbeitername</FormLabel>
-                  <FormControl>
-                    <Input placeholder="z.B. Max Mustermann" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
-            </Button>
-          </form>
-        </Form>
         <div className="space-y-2">
           {employees.length > 0 ? (
             employees.map((employee) => {
@@ -200,7 +222,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                           <AlertDialogHeader>
                             <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Diese Aktion kann nicht rückgängig gemacht werden. Der Mitarbeiter und alle zugehörigen Zeiteinträge werden dauerhaft gelöscht.
+                              Diese Aktion kann nicht rückgängig gemacht werden. Der Mitarbeiter wird dauerhaft gelöscht.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -303,7 +325,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
         </div>
       </CardContent>
        {/* Edit Entry Dialog */}
-        <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
+        <Dialog open={isEditFormDialogOpen} onOpenChange={setIsEditFormDialogOpen}>
             <DialogContent>
                 <DialogHeader>
                 <DialogTitle>Eintrag bearbeiten</DialogTitle>

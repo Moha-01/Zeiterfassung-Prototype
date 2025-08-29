@@ -22,6 +22,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from '@/components/ui/dialog';
 
 const locationSchema = z.object({
   name: z.string().min(1, 'Name ist erforderlich.'),
@@ -36,6 +46,7 @@ interface LocationManagementProps {
 
 export function LocationManagement({ locations, timeEntries, onAddLocation, onDeleteLocation }: LocationManagementProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const form = useForm<z.infer<typeof locationSchema>>({
     resolver: zodResolver(locationSchema),
     defaultValues: { name: '' },
@@ -46,38 +57,59 @@ export function LocationManagement({ locations, timeEntries, onAddLocation, onDe
     onAddLocation({ name: values.name });
     form.reset();
     setIsSubmitting(false);
+    setIsDialogOpen(false);
   }
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <MapPin className="h-6 w-6" />
-          Arbeitsorte verwalten
-        </CardTitle>
-        <CardDescription>Fügen Sie neue Arbeitsorte hinzu oder entfernen Sie sie.</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+            <CardTitle className="flex items-center gap-2">
+            <MapPin className="h-6 w-6" />
+            Arbeitsorte verwalten
+            </CardTitle>
+            <CardDescription>Fügen Sie neue Arbeitsorte hinzu oder entfernen Sie sie.</CardDescription>
+        </div>
+         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" /> Arbeitsort
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Neuen Arbeitsort hinzufügen</DialogTitle>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ortsname</FormLabel>
+                      <FormControl>
+                        <Input placeholder="z.B. Stadt, Adresse, Name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button type="button" variant="secondary">Abbrechen</Button>
+                  </DialogClose>
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Speichern
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-end gap-2 mb-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem className="flex-grow">
-                  <FormLabel>Ortsname</FormLabel>
-                  <FormControl>
-                    <Input placeholder="z.B. Stadt, Adresse, Name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
-            </Button>
-          </form>
-        </Form>
         <div className="max-h-60 overflow-y-auto">
           <Table>
             <TableHeader>
