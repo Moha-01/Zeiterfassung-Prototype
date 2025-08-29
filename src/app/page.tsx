@@ -51,8 +51,8 @@ export default function Home() {
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         <Header />
-        <main className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="md:col-span-1 space-y-8">
+        <main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1 space-y-8">
             <EmployeeManagement 
               employees={employees} 
               onAddEmployee={addEmployee} 
@@ -62,7 +62,7 @@ export default function Home() {
             />
             <LocationManagement locations={locations} onAddLocation={addLocation} onDeleteLocation={deleteLocation} />
           </div>
-          <div className="md:col-span-2">
+          <div className="lg:col-span-2">
             <TimeLogList
               entries={timeEntries}
               employees={employees}

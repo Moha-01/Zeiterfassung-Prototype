@@ -11,8 +11,9 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { calculateDuration, formatDate, formatTime } from '@/lib/utils';
+import { calculateDuration, formatDate } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const employeeSchema = z.object({
   name: z.string().min(1, 'Name ist erforderlich.'),
@@ -28,7 +29,7 @@ interface EmployeeManagementProps {
 
 export function EmployeeManagement({ employees, timeEntries, locations, onAddEmployee, onDeleteEmployee }: EmployeeManagementProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof employeeSchema>>({
     resolver: zodResolver(employeeSchema),
@@ -42,20 +43,6 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
     setIsSubmitting(false);
   }
 
-  const handleSelectEmployee = (employee: Employee) => {
-    if (selectedEmployee?.id === employee.id) {
-      setSelectedEmployee(null);
-    } else {
-      setSelectedEmployee(employee);
-    }
-  };
-
-  const employeeWorkHistory = selectedEmployee
-    ? timeEntries
-        .filter((entry) => entry.employeeId === selectedEmployee.id)
-        .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
-    : [];
-
   const getLocationName = (locationId: string) => locations.find((l) => l.id === locationId)?.name || 'Unbekannt';
 
   return (
@@ -65,7 +52,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
           <Users className="h-6 w-6" />
           Mitarbeiter verwalten
         </CardTitle>
-        <CardDescription>Fügen Sie neue Mitarbeiter hinzu, entfernen Sie sie oder sehen Sie ihre Arbeitszeiten ein.</CardDescription>
+        <CardDescription>Fügen Sie neue Mitarbeiter hinzu oder sehen Sie ihre Arbeitszeiten ein.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -88,81 +75,67 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
             </Button>
           </form>
         </Form>
-        <ScrollArea className="max-h-60 mb-4">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead className="text-right">Aktion</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {employees.length > 0 ? (
-                employees.map((employee) => (
-                  <TableRow 
-                    key={employee.id} 
-                    onClick={() => handleSelectEmployee(employee)}
-                    className={`cursor-pointer ${selectedEmployee?.id === employee.id ? 'bg-secondary' : ''}`}
-                  >
-                    <TableCell>{employee.name}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onDeleteEmployee(employee.id); }}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={2} className="text-center text-muted-foreground">
-                    Keine Mitarbeiter angelegt.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </ScrollArea>
-        {selectedEmployee && (
-          <Card className="mt-4">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className='flex items-center gap-2'>
-                  <History className="h-6 w-6" />
-                  Arbeitshistorie für {selectedEmployee.name}
-                </div>
-                <Button variant="ghost" size="icon" onClick={() => setSelectedEmployee(null)}>
-                  <XCircle className="h-5 w-5" />
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {employeeWorkHistory.length > 0 ? (
-                <ScrollArea className="h-64">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Datum</TableHead>
-                      <TableHead>Ort</TableHead>
-                      <TableHead>Dauer</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {employeeWorkHistory.map(entry => (
-                       <TableRow key={entry.id}>
-                         <TableCell>{formatDate(entry.startTime)}</TableCell>
-                         <TableCell>{getLocationName(entry.locationId)}</TableCell>
-                         <TableCell>{calculateDuration(entry.startTime, entry.endTime)}</TableCell>
-                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                </ScrollArea>
-              ) : (
-                <p className='text-sm text-muted-foreground text-center py-4'>Keine Arbeitshistorie für diesen Mitarbeiter vorhanden.</p>
-              )}
-            </CardContent>
-          </Card>
-        )}
+        <div className="space-y-2">
+          {employees.length > 0 ? (
+            employees.map((employee) => {
+              const employeeWorkHistory = timeEntries
+                .filter((entry) => entry.employeeId === employee.id)
+                .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+
+              return (
+                <Collapsible key={employee.id} onOpenChange={(isOpen) => setSelectedEmployeeId(isOpen ? employee.id : null)} open={selectedEmployeeId === employee.id}>
+                  <div className={`flex items-center justify-between rounded-md border p-2 ${selectedEmployeeId === employee.id ? 'bg-secondary' : ''}`}>
+                    <CollapsibleTrigger asChild>
+                      <div className="flex-grow cursor-pointer px-2">
+                        <p className="font-medium">{employee.name}</p>
+                      </div>
+                    </CollapsibleTrigger>
+                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onDeleteEmployee(employee.id); }}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+
+                  <CollapsibleContent>
+                    <div className="p-4 mt-2 border rounded-md">
+                      <h4 className="text-md font-semibold mb-2 flex items-center gap-2">
+                        <History className="h-5 w-5" />
+                        Arbeitshistorie
+                      </h4>
+                      {employeeWorkHistory.length > 0 ? (
+                        <ScrollArea className="h-64">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Datum</TableHead>
+                                <TableHead>Ort</TableHead>
+                                <TableHead>Dauer</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {employeeWorkHistory.map(entry => (
+                                 <TableRow key={entry.id}>
+                                   <TableCell>{formatDate(entry.startTime)}</TableCell>
+                                   <TableCell>{getLocationName(entry.locationId)}</TableCell>
+                                   <TableCell>{calculateDuration(entry.startTime, entry.endTime)}</TableCell>
+                                 </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </ScrollArea>
+                      ) : (
+                        <p className='text-sm text-muted-foreground text-center py-4'>Keine Arbeitshistorie für diesen Mitarbeiter vorhanden.</p>
+                      )}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )
+            })
+          ) : (
+            <div className="text-center text-muted-foreground border rounded-md p-4">
+              Keine Mitarbeiter angelegt.
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
