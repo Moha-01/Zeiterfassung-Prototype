@@ -5,14 +5,14 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format, parse, parseISO, startOfDay } from 'date-fns';
-import { Users, PlusCircle, Trash2, Loader2, History, Edit, Calendar as CalendarIcon, MapPin } from 'lucide-react';
+import { Users, PlusCircle, Trash2, Loader2, History, Edit, Calendar as CalendarIcon, MapPin, CalendarDays, Clock, Info } from 'lucide-react';
 import type { Employee, TimeEntry, Location } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { calculateDuration, formatDate, cn } from '@/lib/utils';
+import { calculateDuration, formatDate, cn, formatTime } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   AlertDialog,
@@ -78,6 +78,9 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
   const [isEditFormDialogOpen, setIsEditFormDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<TimeEntry | null>(null);
+
 
   const timeEntryForm = useForm<z.infer<typeof timeEntrySchema>>({
     resolver: zodResolver(timeEntrySchema),
@@ -121,6 +124,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
   }
   
   const openDialogForEdit = (entry: TimeEntry) => {
+    setIsDetailDialogOpen(false);
     setEditingEntry(entry);
     setSelectedDate(startOfDay(parseISO(entry.startTime)));
     timeEntryForm.reset({
@@ -131,6 +135,12 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
     });
     setIsEditFormDialogOpen(true);
   };
+  
+  const openDialogForDetails = (entry: TimeEntry) => {
+    setSelectedEntry(entry);
+    setIsDetailDialogOpen(true);
+  };
+
 
   const getLocationName = (locationId: string) => locations.find((l) => l.id === locationId)?.name || 'Unbekannt';
 
@@ -248,39 +258,14 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                                 <TableHead>Datum</TableHead>
                                 <TableHead>Ort</TableHead>
                                 <TableHead>Dauer</TableHead>
-                                <TableHead className="text-right">Aktionen</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
                               {paginatedEntries.map(entry => (
-                                 <TableRow key={entry.id}>
+                                 <TableRow key={entry.id} onClick={() => openDialogForDetails(entry)} className="cursor-pointer">
                                    <TableCell>{formatDate(entry.startTime)}</TableCell>
                                    <TableCell>{getLocationName(entry.locationId)}</TableCell>
                                    <TableCell>{calculateDuration(entry.startTime, entry.endTime)}</TableCell>
-                                   <TableCell className="text-right">
-                                     <Button variant="ghost" size="icon" onClick={() => openDialogForEdit(entry)}>
-                                       <Edit className="h-4 w-4" />
-                                     </Button>
-                                     <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                           <Button variant="ghost" size="icon">
-                                             <Trash2 className="h-4 w-4 text-destructive" />
-                                           </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                          <AlertDialogHeader>
-                                            <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                              Dieser Zeiteintrag wird dauerhaft gelöscht.
-                                            </AlertDialogDescription>
-                                          </AlertDialogHeader>
-                                          <AlertDialogFooter>
-                                            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => onDeleteEntry(entry.id)}>Löschen</AlertDialogAction>
-                                          </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                      </AlertDialog>
-                                   </TableCell>
                                  </TableRow>
                               ))}
                             </TableBody>
@@ -443,6 +428,80 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                 </form>
                 </Form>
             </DialogContent>
+        </Dialog>
+
+        {/* Detail Dialog */}
+        <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+          <DialogContent>
+             {selectedEntry && (
+              <>
+                <DialogHeader>
+                  <DialogTitle>Eintrag Details</DialogTitle>
+                   <DialogDescription>
+                      Details für den ausgewählten Zeiteintrag.
+                   </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                   <div className="flex items-center gap-4">
+                    <MapPin className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Arbeitsort</p>
+                      <p className="font-medium">{getLocationName(selectedEntry.locationId)}</p>
+                    </div>
+                  </div>
+                   <div className="flex items-center gap-4">
+                    <CalendarDays className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Datum</p>
+                      <p className="font-medium">{formatDate(selectedEntry.startTime)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <Clock className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Zeit</p>
+                      <p className="font-medium">{formatTime(selectedEntry.startTime)} - {formatTime(selectedEntry.endTime)}</p>
+                    </div>
+                  </div>
+                   <div className="flex items-center gap-4">
+                    <Info className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Dauer</p>
+                      <p className="font-medium">{calculateDuration(selectedEntry.startTime, selectedEntry.endTime)}</p>
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                   <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                         <Button variant="destructive" className="w-full">
+                            <Trash2 className="mr-2 h-4 w-4" /> Löschen
+                         </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Diese Aktion kann nicht rückgängig gemacht werden. Dieser Zeiteintrag wird dauerhaft gelöscht.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => {
+                            onDeleteEntry(selectedEntry.id);
+                            setIsDetailDialogOpen(false);
+                          }}>Löschen</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                    <Button type="button" variant="secondary" onClick={() => setIsDetailDialogOpen(false)} className="w-full">Schließen</Button>
+                    <Button type="button" onClick={() => openDialogForEdit(selectedEntry)} className="w-full">
+                        <Edit className="mr-2 h-4 w-4" /> Bearbeiten
+                    </Button>
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
         </Dialog>
     </Card>
   );
