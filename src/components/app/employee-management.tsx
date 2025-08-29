@@ -39,22 +39,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useTranslation } from '@/hooks/use-translation';
 
-const employeeSchema = z.object({
-  name: z.string().min(1, 'Name ist erforderlich.'),
+
+const employeeSchema = (t: (key: string) => string) => z.object({
+  name: z.string().min(1, t('employeeNameRequired')),
 });
 
-const timeEntrySchema = z.object({
-  employeeId: z.string().min(1, 'Mitarbeiter ist erforderlich.'),
-  locationId: z.string().min(1, 'Arbeitsort ist erforderlich.'),
-  startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Ungültiges Zeitformat (HH:mm)'),
-  endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Ungültiges Zeitformat (HH:mm)'),
+const timeEntrySchema = (t: (key: string) => string) => z.object({
+  employeeId: z.string().min(1, t('employeeIsRequired')),
+  locationId: z.string().min(1, t('locationIsRequired')),
+  startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, t('invalidTimeFormat')),
+  endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, t('invalidTimeFormat')),
 }).refine(data => {
   const start = parse(data.startTime, 'HH:mm', new Date());
   const end = parse(data.endTime, 'HH:mm', new Date());
   return start < end;
 }, {
-  message: 'Endzeit muss nach der Startzeit liegen.',
+  message: t('endTimeAfterStartTime'),
   path: ['endTime'],
 });
 
@@ -73,6 +75,7 @@ interface EmployeeManagementProps {
 const ENTRIES_PER_PAGE = 5;
 
 export function EmployeeManagement({ employees, timeEntries, locations, onAddEmployee, onDeleteEmployee, onUpdateEntry, onDeleteEntry, onDeleteAllEntries }: EmployeeManagementProps) {
+  const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -84,16 +87,16 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
   const [selectedEntry, setSelectedEntry] = useState<TimeEntry | null>(null);
 
 
-  const timeEntryForm = useForm<z.infer<typeof timeEntrySchema>>({
-    resolver: zodResolver(timeEntrySchema),
+  const timeEntryForm = useForm<z.infer<ReturnType<typeof timeEntrySchema>>>({
+    resolver: zodResolver(timeEntrySchema(t)),
   });
 
-  const employeeForm = useForm<z.infer<typeof employeeSchema>>({
-    resolver: zodResolver(employeeSchema),
+  const employeeForm = useForm<z.infer<ReturnType<typeof employeeSchema>>>({
+    resolver: zodResolver(employeeSchema(t)),
     defaultValues: { name: '' },
   });
 
-  async function onEmployeeSubmit(values: z.infer<typeof employeeSchema>) {
+  async function onEmployeeSubmit(values: z.infer<ReturnType<typeof employeeSchema>>) {
     setIsSubmitting(true);
     onAddEmployee({ name: values.name });
     employeeForm.reset();
@@ -101,7 +104,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
     setIsAddFormOpen(false);
   }
 
-  function onTimeEntrySubmit(values: z.infer<typeof timeEntrySchema>) {
+  function onTimeEntrySubmit(values: z.infer<ReturnType<typeof timeEntrySchema>>) {
     const createDate = (time: string) => {
         const [hours, minutes] = time.split(':').map(Number);
         const date = new Date(selectedDate);
@@ -144,7 +147,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
   };
 
 
-  const getLocationName = (locationId: string) => locations.find((l) => l.id === locationId)?.name || 'Unbekannt';
+  const getLocationName = (locationId: string) => locations.find((l) => l.id === locationId)?.name || t('unknown');
 
   const togglePaidStatus = (entry: TimeEntry, event: React.MouseEvent) => {
     event.stopPropagation();
@@ -157,19 +160,19 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
         <div>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-6 w-6" />
-            Mitarbeiter verwalten
+            {t('manageEmployees')}
           </CardTitle>
-          <CardDescription>Fügen Sie neue Mitarbeiter hinzu oder sehen Sie ihre Arbeitszeiten ein.</CardDescription>
+          <CardDescription>{t('manageEmployeesDescription')}</CardDescription>
         </div>
         <Dialog open={isAddFormOpen} onOpenChange={setIsAddFormOpen}>
           <DialogTrigger asChild>
              <Button>
-              <PlusCircle className="mr-2 h-4 w-4" /> Mitarbeiter
+              <PlusCircle className="mr-2 h-4 w-4" /> {t('employee')}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Neuen Mitarbeiter hinzufügen</DialogTitle>
+              <DialogTitle>{t('addNewEmployee')}</DialogTitle>
             </DialogHeader>
              <Form {...employeeForm}>
               <form onSubmit={employeeForm.handleSubmit(onEmployeeSubmit)} className="space-y-4">
@@ -178,9 +181,9 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Mitarbeitername</FormLabel>
+                      <FormLabel>{t('employeeName')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="z.B. Max Mustermann" {...field} />
+                        <Input placeholder={t('employeeNamePlaceholder')} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -188,11 +191,11 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                 />
                 <DialogFooter>
                   <DialogClose asChild>
-                    <Button type="button" variant="secondary">Abbrechen</Button>
+                    <Button type="button" variant="secondary">{t('cancel')}</Button>
                   </DialogClose>
                   <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Speichern
+                    {t('save')}
                   </Button>
                 </DialogFooter>
               </form>
@@ -234,21 +237,21 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                               variant="ghost"
                               size="icon"
                               onClick={(e) => e.stopPropagation()}
-                              aria-label="Mitarbeiter löschen"
+                              aria-label={t('deleteEmployee')}
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
+                            <AlertDialogTitle>{t('areYouSure')}</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Diese Aktion kann nicht rückgängig gemacht werden. Der Mitarbeiter wird dauerhaft gelöscht.
+                              {t('deleteEmployeeConfirmation')}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => onDeleteEmployee(employee.id)}>Löschen</AlertDialogAction>
+                            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => onDeleteEmployee(employee.id)}>{t('delete')}</AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
@@ -260,26 +263,26 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="text-md font-semibold flex items-center gap-2">
                           <History className="h-5 w-5" />
-                          Arbeitshistorie
+                          {t('workHistory')}
                         </h4>
                         {hasEntries && (
                            <AlertDialog>
                             <AlertDialogTrigger asChild>
                                <Button variant="destructive" size="sm">
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Verlauf löschen
+                                {t('deleteHistory')}
                               </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
+                                <AlertDialogTitle>{t('areYouSure')}</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Alle Zeiteinträge für diesen Mitarbeiter werden dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.
+                                  {t('deleteAllEntriesConfirmation')}
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => onDeleteAllEntries(employee.id)}>Alles löschen</AlertDialogAction>
+                                <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => onDeleteAllEntries(employee.id)}>{t('deleteAll')}</AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
@@ -290,10 +293,10 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead>Datum</TableHead>
-                                <TableHead>Ort</TableHead>
-                                <TableHead>Dauer</TableHead>
-                                <TableHead>Bezahlt</TableHead>
+                                <TableHead>{t('date')}</TableHead>
+                                <TableHead>{t('location')}</TableHead>
+                                <TableHead>{t('duration')}</TableHead>
+                                <TableHead>{t('paid')}</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -319,10 +322,10 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                 disabled={currentPage === 1}
                               >
-                                Zurück
+                                {t('previous')}
                               </Button>
                               <span className="text-sm text-muted-foreground">
-                                Seite {currentPage} von {totalPages}
+                                {t('page')} {currentPage} {t('of')} {totalPages}
                               </span>
                               <Button
                                 variant="outline"
@@ -330,13 +333,13 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                 disabled={currentPage === totalPages}
                               >
-                                Weiter
+                                {t('next')}
                               </Button>
                             </div>
                           )}
                         </>
                       ) : (
-                        <p className='text-sm text-muted-foreground text-center py-4'>Keine Arbeitshistorie für diesen Mitarbeiter vorhanden.</p>
+                        <p className='text-sm text-muted-foreground text-center py-4'>{t('noWorkHistory')}</p>
                       )}
                     </div>
                   </CollapsibleContent>
@@ -345,7 +348,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
             })
           ) : (
             <div className="text-center text-muted-foreground border rounded-md p-4">
-              Keine Mitarbeiter angelegt.
+              {t('noEmployees')}
             </div>
           )}
         </div>
@@ -354,9 +357,9 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
         <Dialog open={isEditFormDialogOpen} onOpenChange={setIsEditFormDialogOpen}>
             <DialogContent>
                 <DialogHeader>
-                <DialogTitle>Eintrag bearbeiten</DialogTitle>
+                <DialogTitle>{t('editEntry')}</DialogTitle>
                 <DialogDescription>
-                    Ändern Sie die Details und speichern Sie.
+                    {t('editEntryDescription')}
                 </DialogDescription>
                 </DialogHeader>
                 <Form {...timeEntryForm}>
@@ -366,11 +369,11 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                     name="employeeId"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Mitarbeiter</FormLabel>
+                        <FormLabel>{t('employee')}</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value} disabled>
                                <FormControl>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Mitarbeiter auswählen" />
+                                    <SelectValue placeholder={t('selectEmployee')} />
                                 </SelectTrigger>
                                </FormControl>
                                <SelectContent>
@@ -386,11 +389,11 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                     name="locationId"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Arbeitsort</FormLabel>
+                        <FormLabel>{t('location')}</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                <FormControl>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Arbeitsort auswählen" />
+                                    <SelectValue placeholder={t('selectLocation')} />
                                 </SelectTrigger>
                                </FormControl>
                                <SelectContent>
@@ -402,7 +405,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                     )}
                     />
                     <FormItem>
-                        <FormLabel>Datum</FormLabel>
+                        <FormLabel>{t('date')}</FormLabel>
                         <Popover>
                             <PopoverTrigger asChild>
                             <FormControl>
@@ -435,7 +438,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                         name="startTime"
                         render={({ field }) => (
                             <FormItem className="flex-1">
-                            <FormLabel>Startzeit</FormLabel>
+                            <FormLabel>{t('startTime')}</FormLabel>
                             <FormControl>
                                 <Input type="time" {...field} />
                             </FormControl>
@@ -448,7 +451,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                         name="endTime"
                         render={({ field }) => (
                             <FormItem className="flex-1">
-                            <FormLabel>Endzeit</FormLabel>
+                            <FormLabel>{t('endTime')}</FormLabel>
                             <FormControl>
                                 <Input type="time" {...field} />
                             </FormControl>
@@ -459,11 +462,11 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                     </div>
                     <DialogFooter>
                     <DialogClose asChild>
-                        <Button type="button" variant="secondary">Abbrechen</Button>
+                        <Button type="button" variant="secondary">{t('cancel')}</Button>
                     </DialogClose>
                     <Button type="submit" disabled={timeEntryForm.formState.isSubmitting}>
                         {timeEntryForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Speichern
+                        {t('save')}
                     </Button>
                     </DialogFooter>
                 </form>
@@ -484,37 +487,37 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
              {selectedEntry && (
               <>
                 <DialogHeader>
-                  <DialogTitle>Eintrag Details</DialogTitle>
+                  <DialogTitle>{t('entryDetails')}</DialogTitle>
                    <DialogDescription>
-                      Details für den ausgewählten Zeiteintrag.
+                      {t('entryDetailsDescription')}
                    </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                    <div className="flex items-center gap-4">
                     <MapPin className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Arbeitsort</p>
+                      <p className="text-sm text-muted-foreground">{t('location')}</p>
                       <p className="font-medium">{getLocationName(selectedEntry.locationId)}</p>
                     </div>
                   </div>
                    <div className="flex items-center gap-4">
                     <CalendarDays className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Datum</p>
+                      <p className="text-sm text-muted-foreground">{t('date')}</p>
                       <p className="font-medium">{formatDate(selectedEntry.startTime)}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
                     <Clock className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Zeit</p>
+                      <p className="text-sm text-muted-foreground">{t('time')}</p>
                       <p className="font-medium">{formatTime(selectedEntry.startTime)} - {formatTime(selectedEntry.endTime)}</p>
                     </div>
                   </div>
                    <div className="flex items-center gap-4">
                     <Info className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Dauer</p>
+                      <p className="text-sm text-muted-foreground">{t('duration')}</p>
                       <p className="font-medium">{calculateDuration(selectedEntry.startTime, selectedEntry.endTime)}</p>
                     </div>
                   </div>
@@ -532,7 +535,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                         htmlFor="paid"
                         className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                     >
-                        Als bezahlt markieren
+                        {t('markAsPaid')}
                     </label>
                  </div>
                 </div>
@@ -540,28 +543,28 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                    <AlertDialog>
                       <AlertDialogTrigger asChild>
                          <Button variant="destructive" className="w-full">
-                            <Trash2 className="mr-2 h-4 w-4" /> Löschen
+                            <Trash2 className="mr-2 h-4 w-4" /> {t('delete')}
                          </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
+                          <AlertDialogTitle>{t('areYouSure')}</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Diese Aktion kann nicht rückgängig gemacht werden. Dieser Zeiteintrag wird dauerhaft gelöscht.
+                            {t('deleteEntryConfirmation')}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                          <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
                           <AlertDialogAction onClick={() => {
                             onDeleteEntry(selectedEntry.id);
                             setIsDetailDialogOpen(false);
-                          }}>Löschen</AlertDialogAction>
+                          }}>{t('delete')}</AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
-                    <Button type="button" variant="secondary" onClick={() => setIsDetailDialogOpen(false)} className="w-full">Schließen</Button>
+                    <Button type="button" variant="secondary" onClick={() => setIsDetailDialogOpen(false)} className="w-full">{t('close')}</Button>
                     <Button type="button" onClick={() => openDialogForEdit(selectedEntry)} className="w-full">
-                        <Edit className="mr-2 h-4 w-4" /> Bearbeiten
+                        <Edit className="mr-2 h-4 w-4" /> {t('edit')}
                     </Button>
                 </DialogFooter>
               </>

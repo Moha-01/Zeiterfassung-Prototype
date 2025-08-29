@@ -9,6 +9,8 @@ import { LocationManagement } from '@/components/app/location-management';
 import { BottomNavbar } from '@/components/app/bottom-navbar';
 import type { TimeEntry, Employee, Location } from '@/types';
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from '@/hooks/use-translation';
+
 
 export type View = 'time' | 'employees' | 'locations';
 
@@ -18,6 +20,7 @@ export default function Home() {
   const [locations, setLocations] = useLocalStorage<Location[]>('locations', []);
   const { toast } = useToast();
   const [activeView, setActiveView] = useState<View>('time');
+  const { t } = useTranslation();
 
 
   const addTimeEntry = (entry: Omit<TimeEntry, 'id' | 'paid'>) => {
@@ -48,8 +51,8 @@ export default function Home() {
     const hasEntries = timeEntries.some((entry) => entry.employeeId === id);
     if (hasEntries) {
       toast({
-        title: "Fehler beim Löschen",
-        description: "Mitarbeiter kann nicht gelöscht werden, da noch Zeiteinträge vorhanden sind.",
+        title: t('deleteErrorTitle'),
+        description: t('deleteEmployeeErrorDescription'),
         variant: "destructive",
       });
       return;
@@ -66,8 +69,8 @@ export default function Home() {
     const hasEntries = timeEntries.some((entry) => entry.locationId === id);
     if (hasEntries) {
        toast({
-        title: "Fehler beim Löschen",
-        description: "Arbeitsort kann nicht gelöscht werden, da noch Zeiteinträge vorhanden sind.",
+        title: t('deleteErrorTitle'),
+        description: t('deleteLocationErrorDescription'),
         variant: "destructive",
       });
       return;

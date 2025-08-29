@@ -32,9 +32,11 @@ import {
   DialogTrigger,
   DialogClose,
 } from '@/components/ui/dialog';
+import { useTranslation } from '@/hooks/use-translation';
 
-const locationSchema = z.object({
-  name: z.string().min(1, 'Name ist erforderlich.'),
+
+const locationSchema = (t: (key: string) => string) => z.object({
+  name: z.string().min(1, t('locationNameRequired')),
 });
 
 interface LocationManagementProps {
@@ -45,14 +47,15 @@ interface LocationManagementProps {
 }
 
 export function LocationManagement({ locations, timeEntries, onAddLocation, onDeleteLocation }: LocationManagementProps) {
+  const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const form = useForm<z.infer<typeof locationSchema>>({
-    resolver: zodResolver(locationSchema),
+  const form = useForm<z.infer<ReturnType<typeof locationSchema>>>({
+    resolver: zodResolver(locationSchema(t)),
     defaultValues: { name: '' },
   });
 
-  async function onSubmit(values: z.infer<typeof locationSchema>) {
+  async function onSubmit(values: z.infer<ReturnType<typeof locationSchema>>) {
     setIsSubmitting(true);
     onAddLocation({ name: values.name });
     form.reset();
@@ -66,19 +69,19 @@ export function LocationManagement({ locations, timeEntries, onAddLocation, onDe
         <div>
             <CardTitle className="flex items-center gap-2">
             <MapPin className="h-6 w-6" />
-            Arbeitsorte verwalten
+            {t('manageLocations')}
             </CardTitle>
-            <CardDescription>Fügen Sie neue Arbeitsorte hinzu oder entfernen Sie sie.</CardDescription>
+            <CardDescription>{t('manageLocationsDescription')}</CardDescription>
         </div>
          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <PlusCircle className="mr-2 h-4 w-4" /> Arbeitsort
+              <PlusCircle className="mr-2 h-4 w-4" /> {t('location')}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Neuen Arbeitsort hinzufügen</DialogTitle>
+              <DialogTitle>{t('addNewLocation')}</DialogTitle>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -87,9 +90,9 @@ export function LocationManagement({ locations, timeEntries, onAddLocation, onDe
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Ortsname</FormLabel>
+                      <FormLabel>{t('locationName')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="z.B. Stadt, Adresse, Name" {...field} />
+                        <Input placeholder={t('locationNamePlaceholder')} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -97,11 +100,11 @@ export function LocationManagement({ locations, timeEntries, onAddLocation, onDe
                 />
                 <DialogFooter>
                   <DialogClose asChild>
-                    <Button type="button" variant="secondary">Abbrechen</Button>
+                    <Button type="button" variant="secondary">{t('cancel')}</Button>
                   </DialogClose>
                   <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Speichern
+                    {t('save')}
                   </Button>
                 </DialogFooter>
               </form>
@@ -114,8 +117,8 @@ export function LocationManagement({ locations, timeEntries, onAddLocation, onDe
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead className="text-right">Aktion</TableHead>
+                <TableHead>{t('name')}</TableHead>
+                <TableHead className="text-right">{t('action')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -132,21 +135,21 @@ export function LocationManagement({ locations, timeEntries, onAddLocation, onDe
                               variant="ghost" 
                               size="icon"
                               disabled={hasEntries}
-                              aria-label={hasEntries ? "Arbeitsort hat noch Zeiteinträge" : "Arbeitsort löschen"}
+                              aria-label={hasEntries ? t('locationHasEntriesTooltip') : t('deleteLocation')}
                             >
                               <Trash2 className={`h-4 w-4 ${hasEntries ? 'text-muted-foreground' : 'text-destructive'}`} />
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
+                              <AlertDialogTitle>{t('areYouSure')}</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Diese Aktion kann nicht rückgängig gemacht werden. Der Arbeitsort wird dauerhaft gelöscht.
+                                {t('deleteLocationConfirmation')}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => onDeleteLocation(location.id)}>Löschen</AlertDialogAction>
+                              <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => onDeleteLocation(location.id)}>{t('delete')}</AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
@@ -157,7 +160,7 @@ export function LocationManagement({ locations, timeEntries, onAddLocation, onDe
               ) : (
                 <TableRow>
                   <TableCell colSpan={2} className="text-center text-muted-foreground">
-                    Keine Arbeitsorte angelegt.
+                    {t('noLocations')}
                   </TableCell>
                 </TableRow>
               )}

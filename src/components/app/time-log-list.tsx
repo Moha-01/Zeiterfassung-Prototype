@@ -63,21 +63,23 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useTranslation } from '@/hooks/use-translation';
 
 
-const timeEntrySchema = z.object({
-  employeeId: z.string().min(1, 'Mitarbeiter ist erforderlich.'),
-  locationId: z.string().min(1, 'Arbeitsort ist erforderlich.'),
-  startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Ungültiges Zeitformat (HH:mm)'),
-  endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Ungültiges Zeitformat (HH:mm)'),
+const timeEntrySchema = (t: (key: string) => string) => z.object({
+  employeeId: z.string().min(1, t('employeeIsRequired')),
+  locationId: z.string().min(1, t('locationIsRequired')),
+  startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, t('invalidTimeFormat')),
+  endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, t('invalidTimeFormat')),
 }).refine(data => {
   const start = parse(data.startTime, 'HH:mm', new Date());
   const end = parse(data.endTime, 'HH:mm', new Date());
   return start < end;
 }, {
-  message: 'Endzeit muss nach der Startzeit liegen.',
+  message: t('endTimeAfterStartTime'),
   path: ['endTime'],
 });
+
 
 interface TimeLogListProps {
   entries: TimeEntry[];
@@ -96,6 +98,7 @@ export function TimeLogList({
   onUpdateEntry,
   onDeleteEntry,
 }: TimeLogListProps) {
+  const { t } = useTranslation();
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
@@ -104,12 +107,12 @@ export function TimeLogList({
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
 
-  const form = useForm<z.infer<typeof timeEntrySchema>>({
-    resolver: zodResolver(timeEntrySchema),
+  const form = useForm<z.infer<ReturnType<typeof timeEntrySchema>>>({
+    resolver: zodResolver(timeEntrySchema(t)),
   });
 
-  const getEmployeeName = (employeeId: string) => employees.find(e => e.id === employeeId)?.name || 'Unbekannt';
-  const getLocationName = (locationId: string) => locations.find(l => l.id === locationId)?.name || 'Unbekannt';
+  const getEmployeeName = (employeeId: string) => employees.find(e => e.id === employeeId)?.name || t('unknown');
+  const getLocationName = (locationId: string) => locations.find(l => l.id === locationId)?.name || t('unknown');
 
   const openDialogForEdit = (entry: TimeEntry) => {
     setIsDetailDialogOpen(false);
@@ -144,7 +147,7 @@ export function TimeLogList({
     setIsDetailDialogOpen(true);
   };
 
-  const onSubmit = (values: z.infer<typeof timeEntrySchema>) => {
+  const onSubmit = (values: z.infer<ReturnType<typeof timeEntrySchema>>) => {
     const createDate = (time: string) => {
         const [hours, minutes] = time.split(':').map(Number);
         const date = new Date(selectedDate);
@@ -184,22 +187,22 @@ export function TimeLogList({
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Erfasste Stunden</CardTitle>
+          <CardTitle>{t('loggedHours')}</CardTitle>
           <CardDescription>
-            Eine Übersicht aller erfassten Arbeitszeiten.
+            {t('loggedHoursDescription')}
           </CardDescription>
         </div>
         <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={openDialogForAdd}>
-              <PlusCircle className="mr-2 h-4 w-4" /> Eintrag hinzufügen
+              <PlusCircle className="mr-2 h-4 w-4" /> {t('addEntry')}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingEntry ? 'Eintrag bearbeiten' : 'Neuen Eintrag hinzufügen'}</DialogTitle>
+              <DialogTitle>{editingEntry ? t('editEntry') : t('addNewEntry')}</DialogTitle>
               <DialogDescription>
-                {editingEntry ? 'Ändern Sie die Details und speichern Sie.' : 'Fügen Sie einen neuen Zeiteintrag hinzu.'}
+                {editingEntry ? t('editEntryDescription') : t('addNewEntryDescription')}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -209,11 +212,11 @@ export function TimeLogList({
                   name="employeeId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Mitarbeiter</FormLabel>
+                      <FormLabel>{t('employee')}</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                            <FormControl>
                             <SelectTrigger>
-                                <SelectValue placeholder="Mitarbeiter auswählen" />
+                                <SelectValue placeholder={t('selectEmployee')} />
                             </SelectTrigger>
                            </FormControl>
                            <SelectContent>
@@ -229,11 +232,11 @@ export function TimeLogList({
                   name="locationId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Arbeitsort</FormLabel>
+                      <FormLabel>{t('location')}</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                            <FormControl>
                             <SelectTrigger>
-                                <SelectValue placeholder="Arbeitsort auswählen" />
+                                <SelectValue placeholder={t('selectLocation')} />
                             </SelectTrigger>
                            </FormControl>
                            <SelectContent>
@@ -245,7 +248,7 @@ export function TimeLogList({
                   )}
                 />
                  <FormItem>
-                    <FormLabel>Datum</FormLabel>
+                    <FormLabel>{t('date')}</FormLabel>
                     <FormControl>
                          <Popover>
                             <PopoverTrigger asChild>
@@ -279,7 +282,7 @@ export function TimeLogList({
                     name="startTime"
                     render={({ field }) => (
                         <FormItem className="flex-1">
-                        <FormLabel>Startzeit</FormLabel>
+                        <FormLabel>{t('startTime')}</FormLabel>
                         <FormControl>
                             <Input type="time" {...field} />
                         </FormControl>
@@ -292,7 +295,7 @@ export function TimeLogList({
                     name="endTime"
                     render={({ field }) => (
                         <FormItem className="flex-1">
-                        <FormLabel>Endzeit</FormLabel>
+                        <FormLabel>{t('endTime')}</FormLabel>
                         <FormControl>
                             <Input type="time" {...field} />
                         </FormControl>
@@ -303,11 +306,11 @@ export function TimeLogList({
                 </div>
                 <DialogFooter>
                   <DialogClose asChild>
-                    <Button type="button" variant="secondary">Abbrechen</Button>
+                    <Button type="button" variant="secondary">{t('cancel')}</Button>
                   </DialogClose>
                   <Button type="submit" disabled={form.formState.isSubmitting}>
                     {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Speichern
+                    {t('save')}
                   </Button>
                 </DialogFooter>
               </form>
@@ -329,7 +332,7 @@ export function TimeLogList({
                     >
                       <div className="flex items-center">
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {selectedDate ? formatDate(selectedDate.toISOString()) : <span>Datum auswählen</span>}
+                        {selectedDate ? formatDate(selectedDate.toISOString()) : <span>{t('selectDate')}</span>}
                       </div>
                       <ChevronDown className="h-4 w-4 opacity-50" />
                     </Button>
@@ -374,12 +377,12 @@ export function TimeLogList({
                         <Table className="hidden md:table">
                           <TableHeader>
                             <TableRow>
-                              <TableHead>Mitarbeiter</TableHead>
-                              <TableHead>Arbeitsort</TableHead>
-                              <TableHead>Start</TableHead>
-                              <TableHead>Ende</TableHead>
-                              <TableHead>Dauer</TableHead>
-                              <TableHead>Bezahlt</TableHead>
+                              <TableHead>{t('employee')}</TableHead>
+                              <TableHead>{t('location')}</TableHead>
+                              <TableHead>{t('start')}</TableHead>
+                              <TableHead>{t('end')}</TableHead>
+                              <TableHead>{t('duration')}</TableHead>
+                              <TableHead>{t('paid')}</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -402,7 +405,7 @@ export function TimeLogList({
                     </>
                  ) : (
                     <div className="text-center py-10 text-muted-foreground border rounded-md h-full flex flex-col justify-center items-center">
-                        <p>Keine Einträge für diesen Tag.</p>
+                        <p>{t('noEntriesForThisDay')}</p>
                     </div>
                  )}
             </div>
@@ -414,44 +417,44 @@ export function TimeLogList({
              {selectedEntry && (
               <>
                 <DialogHeader>
-                  <DialogTitle>Eintrag Details</DialogTitle>
+                  <DialogTitle>{t('entryDetails')}</DialogTitle>
                    <DialogDescription>
-                      Details für den ausgewählten Zeiteintrag.
+                      {t('entryDetailsDescription')}
                    </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="flex items-center gap-4">
                     <User className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Mitarbeiter</p>
+                      <p className="text-sm text-muted-foreground">{t('employee')}</p>
                       <p className="font-medium">{getEmployeeName(selectedEntry.employeeId)}</p>
                     </div>
                   </div>
                    <div className="flex items-center gap-4">
                     <MapPin className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Arbeitsort</p>
+                      <p className="text-sm text-muted-foreground">{t('location')}</p>
                       <p className="font-medium">{getLocationName(selectedEntry.locationId)}</p>
                     </div>
                   </div>
                    <div className="flex items-center gap-4">
                     <CalendarDays className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Datum</p>
+                      <p className="text-sm text-muted-foreground">{t('date')}</p>
                       <p className="font-medium">{formatDate(selectedEntry.startTime)}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
                     <Clock className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Zeit</p>
+                      <p className="text-sm text-muted-foreground">{t('time')}</p>
                       <p className="font-medium">{formatTime(selectedEntry.startTime)} - {formatTime(selectedEntry.endTime)}</p>
                     </div>
                   </div>
                    <div className="flex items-center gap-4">
                     <Info className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Dauer</p>
+                      <p className="text-sm text-muted-foreground">{t('duration')}</p>
                       <p className="font-medium">{calculateDuration(selectedEntry.startTime, selectedEntry.endTime)}</p>
                     </div>
                   </div>
@@ -469,7 +472,7 @@ export function TimeLogList({
                         htmlFor="paid"
                         className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                     >
-                        Als bezahlt markieren
+                        {t('markAsPaid')}
                     </label>
                  </div>
                 </div>
@@ -477,28 +480,28 @@ export function TimeLogList({
                    <AlertDialog>
                       <AlertDialogTrigger asChild>
                          <Button variant="destructive" className="w-full">
-                            <Trash2 className="mr-2 h-4 w-4" /> Löschen
+                            <Trash2 className="mr-2 h-4 w-4" /> {t('delete')}
                          </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
+                          <AlertDialogTitle>{t('areYouSure')}</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Diese Aktion kann nicht rückgängig gemacht werden. Dieser Zeiteintrag wird dauerhaft gelöscht.
+                            {t('deleteEntryConfirmation')}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                          <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
                           <AlertDialogAction onClick={() => {
                             onDeleteEntry(selectedEntry.id);
                             setIsDetailDialogOpen(false);
-                          }}>Löschen</AlertDialogAction>
+                          }}>{t('delete')}</AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
-                    <Button type="button" variant="secondary" onClick={() => setIsDetailDialogOpen(false)} className="w-full">Schließen</Button>
+                    <Button type="button" variant="secondary" onClick={() => setIsDetailDialogOpen(false)} className="w-full">{t('close')}</Button>
                     <Button type="button" onClick={() => openDialogForEdit(selectedEntry)} className="w-full">
-                        <Edit className="mr-2 h-4 w-4" /> Bearbeiten
+                        <Edit className="mr-2 h-4 w-4" /> {t('edit')}
                     </Button>
                 </DialogFooter>
               </>

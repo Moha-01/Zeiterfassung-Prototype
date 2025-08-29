@@ -3,6 +3,8 @@
 import { Clock, Users, MapPin } from 'lucide-react';
 import type { View } from '@/app/page';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/hooks/use-translation';
+
 
 interface BottomNavbarProps {
   activeView: View;
@@ -10,10 +12,11 @@ interface BottomNavbarProps {
 }
 
 export function BottomNavbar({ activeView, setActiveView }: BottomNavbarProps) {
+  const { t } = useTranslation();
   const navItems = [
-    { id: 'time', label: 'Zeiterfassung', icon: Clock },
-    { id: 'employees', label: 'Mitarbeiter', icon: Users },
-    { id: 'locations', label: 'Arbeitsorte', icon: MapPin },
+    { id: 'time', label: t('timeTracking'), icon: Clock },
+    { id: 'employees', label: t('employees'), icon: Users },
+    { id: 'locations', label: t('locations'), icon: MapPin },
   ];
 
   return (
