@@ -151,14 +151,6 @@ export function TimeLogList({
     return acc;
   }, {});
 
-  const weeklyTotalHours = entries
-    .filter(entry => {
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        return parseISO(entry.startTime) > sevenDaysAgo;
-    })
-    .reduce((acc, entry) => acc + calculateDurationInHours(entry.startTime, entry.endTime), 0);
-
   return (
     <Card className="col-span-1 md:col-span-2">
       <CardHeader className="flex flex-row items-center justify-between">
@@ -381,11 +373,6 @@ export function TimeLogList({
           </div>
         )}
       </CardContent>
-      <CardFooter>
-        <div className="text-lg font-bold text-primary">
-            Wöchentliche Gesamtzeit (letzte 7 Tage): {weeklyTotalHours.toFixed(2)} Stunden
-        </div>
-      </CardFooter>
     </Card>
   );
 }
