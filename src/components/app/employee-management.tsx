@@ -151,9 +151,6 @@ export function EmployeeManagement() {
   
   const handlePaymentClick = (entry: TimeEntry, event: React.MouseEvent) => {
     event.stopPropagation();
-    // This function only handles marking as unpaid, which should not open the confirmation.
-    // The confirmation is handled by the AlertDialog for paid entries.
-    // So we only handle the case for marking as paid.
     if (!entry.paid) {
         setSelectedEntry(entry);
         paymentForm.reset({ amount: entry.amount || 0 });
