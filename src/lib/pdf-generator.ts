@@ -91,15 +91,21 @@ export const generatePdfReport = async (employee: Employee, entries: TimeEntry[]
     doc.setFontSize(14);
     doc.text(t('summary'), (doc.internal.pageSize.width - doc.getTextWidth(t('summary'))) / 2, summaryY);
 
+    const summaryHeaders = [t('description'), t('value')];
+    if (isRtl) {
+        summaryHeaders.reverse();
+    }
+    
     const summaryData = [
         [t('totalHours'), totalHours.toFixed(2)],
         [t('totalPaid'), totalPaid.toLocaleString() + ' ' + t('currency')],
         [t('totalUnpaid'), totalUnpaidEntries]
-    ];
+    ].map(row => isRtl ? row.slice().reverse() : row);
+
 
     doc.autoTable({
         startY: summaryY + 5,
-        head: [[t('description'), t('value')]],
+        head: [summaryHeaders],
         body: summaryData,
         theme: 'striped',
         headStyles: {
@@ -114,19 +120,7 @@ export const generatePdfReport = async (employee: Employee, entries: TimeEntry[]
             font: isRtl ? 'Rubik' : 'helvetica',
         },
         columnStyles: {
-            1: { halign: 'center' }
-        },
-        didParseCell: function (data) {
-            // For RTL, reverse the text of the value cell to display correctly
-            if (isRtl && data.section === 'body' && data.column.index === 1) {
-                const text = data.cell.text[0];
-                if (typeof text === 'string') {
-                    // Special handling for currency
-                    if(text.includes(t('currency'))){
-                        data.cell.text = [t('currency') + ' ' + text.replace(t('currency'), '').trim()];
-                    }
-                }
-            }
+            [isRtl ? 0 : 1]: { halign: 'center' }
         },
     });
 
@@ -137,18 +131,13 @@ export const generatePdfReport = async (employee: Employee, entries: TimeEntry[]
     doc.text(t('timeEntries'), (doc.internal.pageSize.width - doc.getTextWidth(t('timeEntries'))) / 2, tableY);
 
     const tableColumns = [
-        { header: t('date'), dataKey: 'date' },
-        { header: t('location'), dataKey: 'location' },
-        { header: t('time'), dataKey: 'time' },
-        { header: t('duration'), dataKey: 'duration' },
-        { header: t('amount'), dataKey: 'amount' },
         { header: t('status'), dataKey: 'status' },
+        { header: t('amount'), dataKey: 'amount' },
+        { header: t('duration'), dataKey: 'duration' },
+        { header: t('time'), dataKey: 'time' },
+        { header: t('location'), dataKey: 'location' },
+        { header: t('date'), dataKey: 'date' },
     ];
-    
-    if (isRtl) {
-        tableColumns.reverse();
-    }
-
 
     const tableRows = entries.map(entry => {
         const amountText = entry.amount ? entry.amount.toLocaleString() + ' ' + t('currency') : '-';
@@ -157,16 +146,18 @@ export const generatePdfReport = async (employee: Employee, entries: TimeEntry[]
             location: getLocationName(entry.locationId),
             time: `${formatTime(entry.startTime, language)} - ${formatTime(entry.endTime, language)}`,
             duration: calculateDuration(entry.startTime, entry.endTime),
-            amount: isRtl ? (amountText === '-' ? '-' : t('currency') + ' ' + entry.amount.toLocaleString()) : amountText,
+            amount: amountText,
             status: entry.paid ? t('paid') : t('unpaid'),
         };
         return row;
     });
 
+    const finalColumns = isRtl ? tableColumns : tableColumns.slice().reverse();
+
     doc.autoTable({
         startY: tableY + 5,
-        head: [tableColumns.map(c => c.header)],
-        body: tableRows.map(row => tableColumns.map(c => row[c.dataKey])),
+        head: [finalColumns.map(c => c.header)],
+        body: tableRows.map(row => finalColumns.map(c => row[c.dataKey])),
         theme: 'grid',
         headStyles: {
             fillColor: [41, 128, 185],

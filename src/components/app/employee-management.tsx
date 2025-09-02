@@ -153,7 +153,7 @@ export function EmployeeManagement() {
   const handleGenerateReport = (employee: Employee) => {
     const employeeEntries = timeEntries
       .filter(entry => entry.employeeId === employee.id)
-      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+      .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
     
     generatePdfReport(employee, employeeEntries, {
       t,
