@@ -8,14 +8,12 @@ import { EmployeeManagement } from '@/components/app/employee-management';
 import { LocationManagement } from '@/components/app/location-management';
 import { BottomNavbar } from '@/components/app/bottom-navbar';
 import { AppProvider } from '@/context/app-context';
-import { useTranslation } from '@/hooks/use-translation';
 
 
 export type View = 'time' | 'employees' | 'locations';
 
 export default function Home() {
   const [activeView, setActiveView] = useState<View>('time');
-  const { t } = useTranslation();
 
   const MainContent = () => {
     switch (activeView) {

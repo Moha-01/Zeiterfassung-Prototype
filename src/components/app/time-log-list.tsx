@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -6,7 +7,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format, parse, parseISO, startOfDay, isSameDay } from 'date-fns';
 import { PlusCircle, Edit, Trash2, Loader2, CalendarDays, Clock, MapPin, Calendar as CalendarIcon, ChevronDown, User, Info, DollarSign } from 'lucide-react';
-import type { TimeEntry, Employee, Location } from '@/types';
+import type { TimeEntry } from '@/types';
 import {
   calculateDuration,
   formatDate,
@@ -64,6 +65,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useTranslation } from '@/hooks/use-translation';
+import { useAppContext } from '@/context/app-context';
 
 
 const timeEntrySchema = (t: (key: string) => string) => z.object({
@@ -86,24 +88,19 @@ const paymentSchema = (t: (key: string) => string) => z.object({
 });
 
 
-interface TimeLogListProps {
-  entries: TimeEntry[];
-  employees: Employee[];
-  locations: Location[];
-  onAddEntry: (entry: Omit<TimeEntry, 'id' | 'paid'>) => void;
-  onUpdateEntry: (entry: TimeEntry) => void;
-  onDeleteEntry: (id: string) => void;
-}
-
-export function TimeLogList({
-  entries,
-  employees,
-  locations,
-  onAddEntry,
-  onUpdateEntry,
-  onDeleteEntry,
-}: TimeLogListProps) {
+export function TimeLogList() {
   const { t } = useTranslation();
+  const { 
+    timeEntries: entries, 
+    employees, 
+    locations, 
+    addTimeEntry: onAddEntry, 
+    updateTimeEntry: onUpdateEntry, 
+    deleteTimeEntry: onDeleteEntry,
+    getEmployeeName,
+    getLocationName
+  } = useAppContext();
+
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
@@ -120,9 +117,6 @@ export function TimeLogList({
   const paymentForm = useForm<z.infer<ReturnType<typeof paymentSchema>>>({
     resolver: zodResolver(paymentSchema(t)),
   });
-
-  const getEmployeeName = (employeeId: string) => employees.find(e => e.id === employeeId)?.name || t('unknown');
-  const getLocationName = (locationId: string) => locations.find(l => l.id === locationId)?.name || t('unknown');
 
   const openDialogForEdit = (entry: TimeEntry) => {
     setIsDetailDialogOpen(false);
