@@ -74,7 +74,13 @@ export const generatePdfReport = async (employee: Employee, entries: TimeEntry[]
     } else {
         doc.text(`${t('employeeDetails')}: ${employee.name}`, 20, employeeDetailsY);
     }
-    doc.text(`${t('reportGeneratedBy')}: ${t('appTitle')}`, 20, employeeDetailsY + 8);
+    
+    const generatedByText = `${t('reportGeneratedBy')}: ${t('appTitle')}`;
+    if (isRtl) {
+        doc.text(generatedByText.split(': ').reverse().join(' :'), doc.internal.pageSize.width - 20, employeeDetailsY + 8, { align: 'right' });
+    } else {
+        doc.text(generatedByText, 20, employeeDetailsY + 8);
+    }
     
     // Summary
     const totalHours = entries.reduce((acc, entry) => acc + calculateDurationInHours(entry.startTime, entry.endTime), 0);
@@ -86,14 +92,14 @@ export const generatePdfReport = async (employee: Employee, entries: TimeEntry[]
     doc.text(t('summary'), (doc.internal.pageSize.width - doc.getTextWidth(t('summary'))) / 2, summaryY);
 
     const summaryData = [
-        [totalHours.toFixed(2), t('totalHours')],
-        [totalPaid.toLocaleString() + ' ' + t('currency'), t('totalPaid')],
-        [totalUnpaidEntries, t('totalUnpaid')]
+        [t('totalHours'), totalHours.toFixed(2)],
+        [t('totalPaid'), totalPaid.toLocaleString() + ' ' + t('currency')],
+        [t('totalUnpaid'), totalUnpaidEntries]
     ];
 
     doc.autoTable({
         startY: summaryY + 5,
-        head: [[t('value'), t('description')]],
+        head: [[t('description'), t('value')]],
         body: summaryData,
         theme: 'striped',
         headStyles: {
@@ -108,11 +114,18 @@ export const generatePdfReport = async (employee: Employee, entries: TimeEntry[]
             font: isRtl ? 'Rubik' : 'helvetica',
         },
         columnStyles: {
-            0: { halign: 'center' }
+            1: { halign: 'center' }
         },
         didParseCell: function (data) {
-            if (isRtl && data.section === 'body') {
-                data.cell.text = [data.cell.text[0].split(' ').reverse().join('  ')];
+            // For RTL, reverse the text of the value cell to display correctly
+            if (isRtl && data.section === 'body' && data.column.index === 1) {
+                const text = data.cell.text[0];
+                if (typeof text === 'string') {
+                    // Special handling for currency
+                    if(text.includes(t('currency'))){
+                        data.cell.text = [t('currency') + ' ' + text.replace(t('currency'), '').trim()];
+                    }
+                }
             }
         },
     });
@@ -124,26 +137,27 @@ export const generatePdfReport = async (employee: Employee, entries: TimeEntry[]
     doc.text(t('timeEntries'), (doc.internal.pageSize.width - doc.getTextWidth(t('timeEntries'))) / 2, tableY);
 
     const tableColumns = [
-        { header: t('status'), dataKey: 'status' },
-        { header: t('amount'), dataKey: 'amount' },
-        { header: t('duration'), dataKey: 'duration' },
-        { header: t('time'), dataKey: 'time' },
-        { header: t('location'), dataKey: 'location' },
         { header: t('date'), dataKey: 'date' },
+        { header: t('location'), dataKey: 'location' },
+        { header: t('time'), dataKey: 'time' },
+        { header: t('duration'), dataKey: 'duration' },
+        { header: t('amount'), dataKey: 'amount' },
+        { header: t('status'), dataKey: 'status' },
     ];
     
-    if (!isRtl) {
+    if (isRtl) {
         tableColumns.reverse();
     }
 
 
     const tableRows = entries.map(entry => {
+        const amountText = entry.amount ? entry.amount.toLocaleString() + ' ' + t('currency') : '-';
         const row = {
             date: formatDate(entry.startTime, language),
             location: getLocationName(entry.locationId),
             time: `${formatTime(entry.startTime, language)} - ${formatTime(entry.endTime, language)}`,
             duration: calculateDuration(entry.startTime, entry.endTime),
-            amount: entry.amount ? entry.amount.toLocaleString() + ' ' + t('currency') : '-',
+            amount: isRtl ? (amountText === '-' ? '-' : t('currency') + ' ' + entry.amount.toLocaleString()) : amountText,
             status: entry.paid ? t('paid') : t('unpaid'),
         };
         return row;
