@@ -107,7 +107,7 @@ export function LocationManagement() {
         </Dialog>
       </CardHeader>
       <CardContent>
-        <div className="max-h-60 overflow-y-auto">
+        <div>
           <Table>
             <TableHeader>
               <TableRow>
