@@ -2,11 +2,14 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { LanguageProvider } from '@/hooks/use-translation';
+import { Inter } from 'next/font/google'
 
 export const metadata: Metadata = {
   title: 'Zeit Meister',
   description: 'Zeiterfassungs-App für Freiberufler',
 };
+
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export default function RootLayout({
   children,
@@ -14,16 +17,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <LanguageProvider>
-        <head>
-          <link rel="preconnect" href="https://fonts.googleapis.com" />
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-          <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet" />
-        </head>
-        <body className="font-body antialiased">
+    <html lang="de" dir="ltr" className={`${inter.variable}`}>
+      <body className="font-body antialiased">
+        <LanguageProvider>
           {children}
           <Toaster />
-        </body>
-    </LanguageProvider>
+        </LanguageProvider>
+      </body>
+    </html>
   );
 }

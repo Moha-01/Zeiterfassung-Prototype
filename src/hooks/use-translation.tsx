@@ -50,21 +50,10 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   
   const dir = useMemo(() => (language === 'ar' ? 'rtl' : 'ltr'), [language]);
 
-  const initialLang = typeof window !== 'undefined' ? (localStorage.getItem('language')?.replace(/"/g, '') || 'ar') : 'ar';
-  const initialDir = initialLang === 'ar' ? 'rtl' : 'ltr';
-
 
   if (!isMounted) {
-      return (
-        <html lang={initialLang} dir={initialDir}>
-            <head>
-              <link rel="preconnect" href="https://fonts.googleapis.com" />
-              <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-              <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet" />
-            </head>
-            <body></body>
-        </html>
-      );
+      // Render nothing on the server and on the initial client-side render
+      return null;
   }
 
   return (
