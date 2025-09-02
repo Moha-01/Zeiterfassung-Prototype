@@ -77,5 +77,16 @@
   "currency": "دينار عراقي",
   "saveAndMarkPaid": "حفظ ووضع علامة كمدفوع",
   "paymentAmountRequired": "يجب أن يكون المبلغ رقمًا موجبًا.",
-  "amountPaid": "المبلغ المدفوع"
+  "amountPaid": "المبلغ المدفوع",
+  "printReport": "طباعة التقرير",
+  "workReport": "تقرير العمل",
+  "employeeDetails": "تفاصيل الموظف",
+  "summary": "ملخص",
+  "totalHours": "إجمالي الساعات",
+  "totalPaid": "إجمالي المدفوع",
+  "totalUnpaid": "إجمالي غير المدفوع",
+  "timeEntries": "إدخالات الوقت",
+  "status": "الحالة",
+  "unpaid": "غير مدفوع",
+  "reportGeneratedBy": "تم إنشاء التقرير بواسطة"
 }

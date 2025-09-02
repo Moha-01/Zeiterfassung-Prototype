@@ -77,5 +77,16 @@
   "currency": "IQD",
   "saveAndMarkPaid": "Speichern & als bezahlt markieren",
   "paymentAmountRequired": "Betrag muss eine positive Zahl sein.",
-  "amountPaid": "Bezahlter Betrag"
+  "amountPaid": "Bezahlter Betrag",
+  "printReport": "Bericht drucken",
+  "workReport": "Arbeitsbericht",
+  "employeeDetails": "Mitarbeiterdetails",
+  "summary": "Zusammenfassung",
+  "totalHours": "Gesamtstunden",
+  "totalPaid": "Gesamt bezahlt",
+  "totalUnpaid": "Gesamt unbezahlt",
+  "timeEntries": "Zeiteinträge",
+  "status": "Status",
+  "unpaid": "Unbezahlt",
+  "reportGeneratedBy": "Bericht erstellt von"
 }

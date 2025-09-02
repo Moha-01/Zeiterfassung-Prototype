@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format, parse, parseISO, startOfDay } from 'date-fns';
-import { Users, PlusCircle, Trash2, Loader2, History, Edit, Calendar as CalendarIcon, MapPin, CalendarDays, Clock, Info, DollarSign } from 'lucide-react';
+import { Users, PlusCircle, Trash2, Loader2, History, Edit, Calendar as CalendarIcon, MapPin, CalendarDays, Clock, Info, DollarSign, FileDown } from 'lucide-react';
 import type { Employee, TimeEntry, Location } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useTranslation } from '@/hooks/use-translation';
+import { EmployeeReport } from './employee-report';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 
 const employeeSchema = (t: (key: string) => string) => z.object({
@@ -90,7 +93,8 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<TimeEntry | null>(null);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
-
+  const [isReportVisible, setIsReportVisible] = useState(false);
+  const [reportEmployee, setReportEmployee] = useState<Employee | null>(null);
 
   const timeEntryForm = useForm<z.infer<ReturnType<typeof timeEntrySchema>>>({
     resolver: zodResolver(timeEntrySchema(t)),
@@ -175,469 +179,516 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
     }
   };
 
+  const generateReport = async (employee: Employee) => {
+    setReportEmployee(employee);
+    setIsReportVisible(true);
+
+    // Allow the report component to render before generating the PDF
+    setTimeout(async () => {
+        const reportElement = document.getElementById('employee-report');
+        if (reportElement) {
+            const canvas = await html2canvas(reportElement, { scale: 2 });
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const imgWidth = canvas.width;
+            const imgHeight = canvas.height;
+            const ratio = imgWidth / imgHeight;
+            const finalImgWidth = pdfWidth;
+            const finalImgHeight = pdfWidth / ratio;
+            let position = 0;
+
+            pdf.addImage(imgData, 'PNG', 0, position, finalImgWidth, finalImgHeight);
+            pdf.save(`${employee.name}-report.pdf`);
+        }
+        setIsReportVisible(false);
+        setReportEmployee(null);
+    }, 500);
+};
 
   const getLocationName = (locationId: string) => locations.find((l) => l.id === locationId)?.name || t('unknown');
 
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-6 w-6" />
-            {t('manageEmployees')}
-          </CardTitle>
-          <CardDescription>{t('manageEmployeesDescription')}</CardDescription>
-        </div>
-        <Dialog open={isAddFormOpen} onOpenChange={setIsAddFormOpen}>
-          <DialogTrigger asChild>
-             <Button>
-              <PlusCircle className="mr-2 h-4 w-4" /> {t('employee')}
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t('addNewEmployee')}</DialogTitle>
-            </DialogHeader>
-             <Form {...employeeForm}>
-              <form onSubmit={employeeForm.handleSubmit(onEmployeeSubmit)} className="space-y-4">
-                <FormField
-                  control={employeeForm.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('employeeName')}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={t('employeeNamePlaceholder')} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <DialogFooter>
-                  <DialogClose asChild>
-                    <Button type="button" variant="secondary">{t('cancel')}</Button>
-                  </DialogClose>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {t('save')}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          {employees.length > 0 ? (
-            employees.map((employee) => {
-              const employeeWorkHistory = timeEntries
-                .filter((entry) => entry.employeeId === employee.id)
-                .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
-              
-              const hasEntries = employeeWorkHistory.length > 0;
-              const totalPages = Math.ceil(employeeWorkHistory.length / ENTRIES_PER_PAGE);
-              const paginatedEntries = employeeWorkHistory.slice((currentPage - 1) * ENTRIES_PER_PAGE, currentPage * ENTRIES_PER_PAGE);
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-6 w-6" />
+              {t('manageEmployees')}
+            </CardTitle>
+            <CardDescription>{t('manageEmployeesDescription')}</CardDescription>
+          </div>
+          <Dialog open={isAddFormOpen} onOpenChange={setIsAddFormOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <PlusCircle className="mr-2 h-4 w-4" /> {t('employee')}
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{t('addNewEmployee')}</DialogTitle>
+              </DialogHeader>
+              <Form {...employeeForm}>
+                <form onSubmit={employeeForm.handleSubmit(onEmployeeSubmit)} className="space-y-4">
+                  <FormField
+                    control={employeeForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('employeeName')}</FormLabel>
+                        <FormControl>
+                          <Input placeholder={t('employeeNamePlaceholder')} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button type="button" variant="secondary">{t('cancel')}</Button>
+                    </DialogClose>
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {t('save')}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {employees.length > 0 ? (
+              employees.map((employee) => {
+                const employeeWorkHistory = timeEntries
+                  .filter((entry) => entry.employeeId === employee.id)
+                  .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+                
+                const hasEntries = employeeWorkHistory.length > 0;
+                const totalPages = Math.ceil(employeeWorkHistory.length / ENTRIES_PER_PAGE);
+                const paginatedEntries = employeeWorkHistory.slice((currentPage - 1) * ENTRIES_PER_PAGE, currentPage * ENTRIES_PER_PAGE);
 
-              return (
-                <Collapsible key={employee.id} onOpenChange={(isOpen) => {
-                  if (selectedEmployeeId === employee.id && !isOpen) {
-                     setSelectedEmployeeId(null);
-                  } else if (isOpen) {
-                    setSelectedEmployeeId(employee.id);
-                  }
-                  setCurrentPage(1);
-                }} open={selectedEmployeeId === employee.id}>
-                  <div className={`flex items-center justify-between rounded-md border p-2 ${selectedEmployeeId === employee.id ? 'bg-secondary' : ''}`}>
-                    <CollapsibleTrigger asChild>
-                      <div className="flex-grow cursor-pointer px-2">
-                        <p className="font-medium">{employee.name}</p>
+                return (
+                  <Collapsible key={employee.id} onOpenChange={(isOpen) => {
+                    if (selectedEmployeeId === employee.id && !isOpen) {
+                      setSelectedEmployeeId(null);
+                    } else if (isOpen) {
+                      setSelectedEmployeeId(employee.id);
+                    }
+                    setCurrentPage(1);
+                  }} open={selectedEmployeeId === employee.id}>
+                    <div className={`flex items-center justify-between rounded-md border p-2 ${selectedEmployeeId === employee.id ? 'bg-secondary' : ''}`}>
+                      <CollapsibleTrigger asChild>
+                        <div className="flex-grow cursor-pointer px-2">
+                          <p className="font-medium">{employee.name}</p>
+                        </div>
+                      </CollapsibleTrigger>
+                      
+                      <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => e.stopPropagation()}
+                                aria-label={t('deleteEmployee')}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>{t('areYouSure')}</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {t('deleteEmployeeConfirmation')}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => onDeleteEmployee(employee.id)}>{t('delete')}</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+
+                    </div>
+
+                    <CollapsibleContent>
+                      <div className="p-4 mt-2 border rounded-md">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-md font-semibold flex items-center gap-2">
+                            <History className="h-5 w-5" />
+                            {t('workHistory')}
+                          </h4>
+                          {hasEntries && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm">
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  {t('deleteHistory')}
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>{t('areYouSure')}</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {t('deleteAllEntriesConfirmation')}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => onDeleteAllEntries(employee.id)}>{t('deleteAll')}</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </div>
+                        {hasEntries ? (
+                          <>
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>{t('date')}</TableHead>
+                                  <TableHead>{t('location')}</TableHead>
+                                  <TableHead>{t('duration')}</TableHead>
+                                  <TableHead>{t('paid')}</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {paginatedEntries.map(entry => (
+                                  <TableRow key={entry.id} onClick={() => openDialogForDetails(entry)} className="cursor-pointer">
+                                    <TableCell>{formatDate(entry.startTime)}</TableCell>
+                                    <TableCell>{getLocationName(entry.locationId)}</TableCell>
+                                    <TableCell>{calculateDuration(entry.startTime, entry.endTime)}</TableCell>
+                                    <TableCell>
+                                      <button onClick={(e) => openPaymentDialog(entry, e)} className="p-1 border rounded-md">
+                                        {entry.paid ? <DollarSign className="h-5 w-5 text-green-500" /> : <DollarSign className="h-5 w-5 text-destructive" />}
+                                      </button>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                            <div className="flex justify-between items-center mt-4">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => generateReport(employee)}
+                                >
+                                    <FileDown className="mr-2 h-4 w-4" />
+                                    {t('printReport')}
+                                </Button>
+                                {totalPages > 1 && (
+                                <div className="flex justify-end items-center gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                  >
+                                    {t('previous')}
+                                  </Button>
+                                  <span className="text-sm text-muted-foreground">
+                                    {t('page')} {currentPage} {t('of')} {totalPages}
+                                  </span>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                  >
+                                    {t('next')}
+                                  </Button>
+                                </div>
+                                )}
+                            </div>
+                          </>
+                        ) : (
+                          <p className='text-sm text-muted-foreground text-center py-4'>{t('noWorkHistory')}</p>
+                        )}
                       </div>
-                    </CollapsibleTrigger>
-                    
-                     <AlertDialog>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )
+              })
+            ) : (
+              <div className="text-center text-muted-foreground border rounded-md p-4">
+                {t('noEmployees')}
+              </div>
+            )}
+          </div>
+        </CardContent>
+        {/* Edit Entry Dialog */}
+          <Dialog open={isEditFormDialogOpen} onOpenChange={setIsEditFormDialogOpen}>
+              <DialogContent>
+                  <DialogHeader>
+                  <DialogTitle>{t('editEntry')}</DialogTitle>
+                  <DialogDescription>
+                      {t('editEntryDescription')}
+                  </DialogDescription>
+                  </DialogHeader>
+                  <Form {...timeEntryForm}>
+                  <form onSubmit={timeEntryForm.handleSubmit(onTimeEntrySubmit)} className="space-y-4">
+                      <FormField
+                      control={timeEntryForm.control}
+                      name="employeeId"
+                      render={({ field }) => (
+                          <FormItem>
+                          <FormLabel>{t('employee')}</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value} disabled>
+                                <FormControl>
+                                  <SelectTrigger>
+                                      <SelectValue placeholder={t('selectEmployee')} />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                      {employees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                          <FormMessage />
+                          </FormItem>
+                      )}
+                      />
+                      <FormField
+                      control={timeEntryForm.control}
+                      name="locationId"
+                      render={({ field }) => (
+                          <FormItem>
+                          <FormLabel>{t('location')}</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                      <SelectValue placeholder={t('selectLocation')} />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                      {locations.map(l => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                          <FormMessage />
+                          </FormItem>
+                      )}
+                      />
+                      <FormItem>
+                          <FormLabel>{t('date')}</FormLabel>
+                          <Popover>
+                              <PopoverTrigger asChild>
+                              <FormControl>
+                                  <Button
+                                  variant={"outline"}
+                                  className={cn(
+                                      "w-full justify-start text-left font-normal",
+                                      !selectedDate && "text-muted-foreground"
+                                  )}
+                                  >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {formatDate(selectedDate.toISOString())}
+                                  </Button>
+                              </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0">
+                                  <Calendar
+                                  mode="single"
+                                  selected={selectedDate}
+                                  onSelect={(date) => date && setSelectedDate(startOfDay(date))}
+                                  initialFocus
+                                  />
+                              </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                      </FormItem>
+                      <div className="flex gap-4">
+                          <FormField
+                          control={timeEntryForm.control}
+                          name="startTime"
+                          render={({ field }) => (
+                              <FormItem className="flex-1">
+                              <FormLabel>{t('startTime')}</FormLabel>
+                              <FormControl>
+                                  <Input type="time" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                              </FormItem>
+                          )}
+                          />
+                          <FormField
+                          control={timeEntryForm.control}
+                          name="endTime"
+                          render={({ field }) => (
+                              <FormItem className="flex-1">
+                              <FormLabel>{t('endTime')}</FormLabel>
+                              <FormControl>
+                                  <Input type="time" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                              </FormItem>
+                          )}
+                          />
+                      </div>
+                      <DialogFooter>
+                      <DialogClose asChild>
+                          <Button type="button" variant="secondary">{t('cancel')}</Button>
+                      </DialogClose>
+                      <Button type="submit" disabled={timeEntryForm.formState.isSubmitting}>
+                          {timeEntryForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          {t('save')}
+                      </Button>
+                      </DialogFooter>
+                  </form>
+                  </Form>
+              </DialogContent>
+          </Dialog>
+
+          {/* Detail Dialog */}
+          <Dialog open={isDetailDialogOpen} onOpenChange={(isOpen) => {
+              setIsDetailDialogOpen(isOpen)
+              if (!isOpen) {
+                const currentEmployee = selectedEmployeeId;
+                setSelectedEmployeeId(null); // Force re-render
+                setTimeout(() => setSelectedEmployeeId(currentEmployee), 0)
+              }
+          }}>
+            <DialogContent>
+              {selectedEntry && (
+                <>
+                  <DialogHeader>
+                    <DialogTitle>{t('entryDetails')}</DialogTitle>
+                    <DialogDescription>
+                        {t('entryDetailsDescription')}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="flex items-center gap-4">
+                      <MapPin className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">{t('location')}</p>
+                        <p className="font-medium">{getLocationName(selectedEntry.locationId)}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <CalendarDays className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">{t('date')}</p>
+                        <p className="font-medium">{formatDate(selectedEntry.startTime)}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <Clock className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">{t('time')}</p>
+                        <p className="font-medium">{formatTime(selectedEntry.startTime)} - {formatTime(selectedEntry.endTime)}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <Info className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">{t('duration')}</p>
+                        <p className="font-medium">{calculateDuration(selectedEntry.startTime, selectedEntry.endTime)}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2 pt-4">
+                      <Checkbox
+                          id="paid"
+                          checked={selectedEntry.paid}
+                          onCheckedChange={(checked) => {
+                              const newEntry = { ...selectedEntry, paid: !!checked, amount: checked ? selectedEntry.amount : undefined };
+                              onUpdateEntry(newEntry);
+                              setSelectedEntry(newEntry);
+                          }}
+                      />
+                      <label
+                          htmlFor="paid"
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                          {t('markAsPaid')}
+                      </label>
+                  </div>
+                  {selectedEntry.paid && selectedEntry.amount && (
+                      <div className="flex items-center gap-4">
+                          <DollarSign className="h-5 w-5 text-muted-foreground" />
+                          <div>
+                          <p className="text-sm text-muted-foreground">{t('amountPaid')}</p>
+                          <p className="font-medium">{selectedEntry.amount.toLocaleString()} {t('currency')}</p>
+                          </div>
+                      </div>
+                  )}
+                  </div>
+                  <DialogFooter className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <AlertDialog>
                         <AlertDialogTrigger asChild>
-                           <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => e.stopPropagation()}
-                              aria-label={t('deleteEmployee')}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
+                          <Button variant="destructive" className="w-full">
+                              <Trash2 className="mr-2 h-4 w-4" /> {t('delete')}
+                          </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                        <AlertDialogContent>
                           <AlertDialogHeader>
                             <AlertDialogTitle>{t('areYouSure')}</AlertDialogTitle>
                             <AlertDialogDescription>
-                              {t('deleteEmployeeConfirmation')}
+                              {t('deleteEntryConfirmation')}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => onDeleteEmployee(employee.id)}>{t('delete')}</AlertDialogAction>
+                            <AlertDialogAction onClick={() => {
+                              onDeleteEntry(selectedEntry.id);
+                              setIsDetailDialogOpen(false);
+                            }}>{t('delete')}</AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
-
-                  </div>
-
-                  <CollapsibleContent>
-                    <div className="p-4 mt-2 border rounded-md">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-md font-semibold flex items-center gap-2">
-                          <History className="h-5 w-5" />
-                          {t('workHistory')}
-                        </h4>
-                        {hasEntries && (
-                           <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                               <Button variant="destructive" size="sm">
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                {t('deleteHistory')}
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>{t('areYouSure')}</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  {t('deleteAllEntriesConfirmation')}
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => onDeleteAllEntries(employee.id)}>{t('deleteAll')}</AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </div>
-                      {hasEntries ? (
-                        <>
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>{t('date')}</TableHead>
-                                <TableHead>{t('location')}</TableHead>
-                                <TableHead>{t('duration')}</TableHead>
-                                <TableHead>{t('paid')}</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {paginatedEntries.map(entry => (
-                                 <TableRow key={entry.id} onClick={() => openDialogForDetails(entry)} className="cursor-pointer">
-                                   <TableCell>{formatDate(entry.startTime)}</TableCell>
-                                   <TableCell>{getLocationName(entry.locationId)}</TableCell>
-                                   <TableCell>{calculateDuration(entry.startTime, entry.endTime)}</TableCell>
-                                   <TableCell>
-                                    <button onClick={(e) => openPaymentDialog(entry, e)} className="p-1 border rounded-md">
-                                      {entry.paid ? <DollarSign className="h-5 w-5 text-green-500" /> : <DollarSign className="h-5 w-5 text-destructive" />}
-                                    </button>
-                                   </TableCell>
-                                 </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                          {totalPages > 1 && (
-                            <div className="flex justify-end items-center gap-2 mt-4">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                disabled={currentPage === 1}
-                              >
-                                {t('previous')}
-                              </Button>
-                              <span className="text-sm text-muted-foreground">
-                                {t('page')} {currentPage} {t('of')} {totalPages}
-                              </span>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                disabled={currentPage === totalPages}
-                              >
-                                {t('next')}
-                              </Button>
-                            </div>
+                      <Button type="button" variant="secondary" onClick={() => setIsDetailDialogOpen(false)} className="w-full">{t('close')}</Button>
+                      <Button type="button" onClick={() => openDialogForEdit(selectedEntry)} className="w-full">
+                          <Edit className="mr-2 h-4 w-4" /> {t('edit')}
+                      </Button>
+                  </DialogFooter>
+                </>
+              )}
+            </DialogContent>
+          </Dialog>
+          
+          {/* Payment Dialog */}
+          <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
+              <DialogContent>
+                  <DialogHeader>
+                      <DialogTitle>{t('enterPaymentAmount')}</DialogTitle>
+                  </DialogHeader>
+                  <Form {...paymentForm}>
+                      <form onSubmit={paymentForm.handleSubmit(onPaymentSubmit)} className="space-y-4">
+                          <FormField
+                          control={paymentForm.control}
+                          name="amount"
+                          render={({ field }) => (
+                              <FormItem>
+                              <FormLabel>{t('amount')} ({t('currency')})</FormLabel>
+                              <FormControl>
+                                  <Input type="number" placeholder="e.g. 50000" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                              </FormItem>
                           )}
-                        </>
-                      ) : (
-                        <p className='text-sm text-muted-foreground text-center py-4'>{t('noWorkHistory')}</p>
-                      )}
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              )
-            })
-          ) : (
-            <div className="text-center text-muted-foreground border rounded-md p-4">
-              {t('noEmployees')}
-            </div>
-          )}
+                          />
+                          <DialogFooter>
+                          <DialogClose asChild>
+                              <Button type="button" variant="secondary">{t('cancel')}</Button>
+                          </DialogClose>
+                          <Button type="submit">{t('saveAndMarkPaid')}</Button>
+                          </DialogFooter>
+                      </form>
+                  </Form>
+              </DialogContent>
+          </Dialog>
+      </Card>
+      {isReportVisible && reportEmployee && (
+        <div className="fixed -left-[9999px] -top-[9999px] opacity-0 pointer-events-none">
+          <EmployeeReport
+            employee={reportEmployee}
+            timeEntries={timeEntries.filter(e => e.employeeId === reportEmployee.id)}
+            locations={locations}
+          />
         </div>
-      </CardContent>
-       {/* Edit Entry Dialog */}
-        <Dialog open={isEditFormDialogOpen} onOpenChange={setIsEditFormDialogOpen}>
-            <DialogContent>
-                <DialogHeader>
-                <DialogTitle>{t('editEntry')}</DialogTitle>
-                <DialogDescription>
-                    {t('editEntryDescription')}
-                </DialogDescription>
-                </DialogHeader>
-                <Form {...timeEntryForm}>
-                <form onSubmit={timeEntryForm.handleSubmit(onTimeEntrySubmit)} className="space-y-4">
-                    <FormField
-                    control={timeEntryForm.control}
-                    name="employeeId"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>{t('employee')}</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value} disabled>
-                               <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder={t('selectEmployee')} />
-                                </SelectTrigger>
-                               </FormControl>
-                               <SelectContent>
-                                    {employees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
-                               </SelectContent>
-                            </Select>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                    <FormField
-                    control={timeEntryForm.control}
-                    name="locationId"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>{t('location')}</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                               <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder={t('selectLocation')} />
-                                </SelectTrigger>
-                               </FormControl>
-                               <SelectContent>
-                                    {locations.map(l => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
-                               </SelectContent>
-                            </Select>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                    <FormItem>
-                        <FormLabel>{t('date')}</FormLabel>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                            <FormControl>
-                                <Button
-                                variant={"outline"}
-                                className={cn(
-                                    "w-full justify-start text-left font-normal",
-                                    !selectedDate && "text-muted-foreground"
-                                )}
-                                >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {formatDate(selectedDate.toISOString())}
-                                </Button>
-                            </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                                <Calendar
-                                mode="single"
-                                selected={selectedDate}
-                                onSelect={(date) => date && setSelectedDate(startOfDay(date))}
-                                initialFocus
-                                />
-                            </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                    </FormItem>
-                    <div className="flex gap-4">
-                        <FormField
-                        control={timeEntryForm.control}
-                        name="startTime"
-                        render={({ field }) => (
-                            <FormItem className="flex-1">
-                            <FormLabel>{t('startTime')}</FormLabel>
-                            <FormControl>
-                                <Input type="time" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                        <FormField
-                        control={timeEntryForm.control}
-                        name="endTime"
-                        render={({ field }) => (
-                            <FormItem className="flex-1">
-                            <FormLabel>{t('endTime')}</FormLabel>
-                            <FormControl>
-                                <Input type="time" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                    </div>
-                    <DialogFooter>
-                    <DialogClose asChild>
-                        <Button type="button" variant="secondary">{t('cancel')}</Button>
-                    </DialogClose>
-                    <Button type="submit" disabled={timeEntryForm.formState.isSubmitting}>
-                        {timeEntryForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {t('save')}
-                    </Button>
-                    </DialogFooter>
-                </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
-
-        {/* Detail Dialog */}
-        <Dialog open={isDetailDialogOpen} onOpenChange={(isOpen) => {
-            setIsDetailDialogOpen(isOpen)
-            if (!isOpen) {
-               const currentEmployee = selectedEmployeeId;
-               setSelectedEmployeeId(null); // Force re-render
-               setTimeout(() => setSelectedEmployeeId(currentEmployee), 0)
-            }
-        }}>
-          <DialogContent>
-             {selectedEntry && (
-              <>
-                <DialogHeader>
-                  <DialogTitle>{t('entryDetails')}</DialogTitle>
-                   <DialogDescription>
-                      {t('entryDetailsDescription')}
-                   </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                   <div className="flex items-center gap-4">
-                    <MapPin className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">{t('location')}</p>
-                      <p className="font-medium">{getLocationName(selectedEntry.locationId)}</p>
-                    </div>
-                  </div>
-                   <div className="flex items-center gap-4">
-                    <CalendarDays className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">{t('date')}</p>
-                      <p className="font-medium">{formatDate(selectedEntry.startTime)}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <Clock className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">{t('time')}</p>
-                      <p className="font-medium">{formatTime(selectedEntry.startTime)} - {formatTime(selectedEntry.endTime)}</p>
-                    </div>
-                  </div>
-                   <div className="flex items-center gap-4">
-                    <Info className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">{t('duration')}</p>
-                      <p className="font-medium">{calculateDuration(selectedEntry.startTime, selectedEntry.endTime)}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2 pt-4">
-                    <Checkbox
-                        id="paid"
-                        checked={selectedEntry.paid}
-                        onCheckedChange={(checked) => {
-                            const newEntry = { ...selectedEntry, paid: !!checked, amount: checked ? selectedEntry.amount : undefined };
-                            onUpdateEntry(newEntry);
-                            setSelectedEntry(newEntry);
-                        }}
-                    />
-                    <label
-                        htmlFor="paid"
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                        {t('markAsPaid')}
-                    </label>
-                 </div>
-                 {selectedEntry.paid && selectedEntry.amount && (
-                    <div className="flex items-center gap-4">
-                        <DollarSign className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                        <p className="text-sm text-muted-foreground">{t('amountPaid')}</p>
-                        <p className="font-medium">{selectedEntry.amount.toLocaleString()} {t('currency')}</p>
-                        </div>
-                    </div>
-                )}
-                </div>
-                <DialogFooter className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                   <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                         <Button variant="destructive" className="w-full">
-                            <Trash2 className="mr-2 h-4 w-4" /> {t('delete')}
-                         </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>{t('areYouSure')}</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            {t('deleteEntryConfirmation')}
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => {
-                            onDeleteEntry(selectedEntry.id);
-                            setIsDetailDialogOpen(false);
-                          }}>{t('delete')}</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                    <Button type="button" variant="secondary" onClick={() => setIsDetailDialogOpen(false)} className="w-full">{t('close')}</Button>
-                    <Button type="button" onClick={() => openDialogForEdit(selectedEntry)} className="w-full">
-                        <Edit className="mr-2 h-4 w-4" /> {t('edit')}
-                    </Button>
-                </DialogFooter>
-              </>
-            )}
-          </DialogContent>
-        </Dialog>
-        
-        {/* Payment Dialog */}
-        <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>{t('enterPaymentAmount')}</DialogTitle>
-                </DialogHeader>
-                <Form {...paymentForm}>
-                    <form onSubmit={paymentForm.handleSubmit(onPaymentSubmit)} className="space-y-4">
-                        <FormField
-                        control={paymentForm.control}
-                        name="amount"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>{t('amount')} ({t('currency')})</FormLabel>
-                            <FormControl>
-                                <Input type="number" placeholder="e.g. 50000" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                        <DialogFooter>
-                        <DialogClose asChild>
-                            <Button type="button" variant="secondary">{t('cancel')}</Button>
-                        </DialogClose>
-                        <Button type="submit">{t('saveAndMarkPaid')}</Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
-
-    </Card>
+      )}
+    </>
   );
 }
