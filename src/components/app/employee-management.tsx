@@ -13,7 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -328,31 +328,29 @@ export function EmployeeManagement() {
                                 ))}
                               </TableBody>
                             </Table>
-                            <div className="flex justify-end items-center mt-4">
-                                {totalPages > 1 && (
-                                <div className="flex justify-end items-center gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handlePageChange(employee.id, employeeCurrentPage - 1)}
-                                    disabled={employeeCurrentPage === 1}
-                                  >
-                                    {t('previous')}
-                                  </Button>
-                                  <span className="text-sm text-muted-foreground">
-                                    {t('page')} {employeeCurrentPage} {t('of')} {totalPages}
-                                  </span>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handlePageChange(employee.id, employeeCurrentPage + 1)}
-                                    disabled={employeeCurrentPage === totalPages}
-                                  >
-                                    {t('next')}
-                                  </Button>
-                                </div>
-                                )}
+                            {totalPages > 1 && (
+                            <div className="flex justify-center items-center mt-4 gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handlePageChange(employee.id, employeeCurrentPage - 1)}
+                                  disabled={employeeCurrentPage === 1}
+                                >
+                                  {t('previous')}
+                                </Button>
+                                <span className="text-sm text-muted-foreground">
+                                  {t('page')} {employeeCurrentPage} {t('of')} {totalPages}
+                                </span>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handlePageChange(employee.id, employeeCurrentPage + 1)}
+                                  disabled={employeeCurrentPage === totalPages}
+                                >
+                                  {t('next')}
+                                </Button>
                             </div>
+                            )}
                           </>
                         ) : (
                           <p className='text-sm text-muted-foreground text-center py-4'>{t('noWorkHistory')}</p>
@@ -654,3 +652,5 @@ export function EmployeeManagement() {
     </>
   );
 }
+
+    

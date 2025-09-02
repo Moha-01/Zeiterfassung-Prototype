@@ -1,0 +1,23 @@
+{
+    "name": "Zeit Meister",
+    "short_name": "ZeitMeister",
+    "description": "Eine Zeiterfassungs-App für Freiberufler und kleine Teams.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#2257da",
+    "icons": [
+        {
+            "src": "/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
+
+    
