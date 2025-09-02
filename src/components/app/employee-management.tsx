@@ -63,7 +63,6 @@ export function EmployeeManagement() {
     deleteTimeEntry,
     deleteTimeEntriesForEmployee, 
     getLocationName,
-    getEmployeeName,
   } = useAppContext();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -160,7 +159,6 @@ export function EmployeeManagement() {
       t,
       language,
       dir,
-      getEmployeeName,
       getLocationName,
     });
   };
@@ -392,10 +390,12 @@ export function EmployeeManagement() {
                                     </Button>
                                 </div>
                                 )}
+                                {hasEntries && (
                                 <Button onClick={() => handleGenerateReport(employee)} variant="secondary">
                                   <Printer className="mr-2 h-4 w-4" />
                                   {t('printReport')}
                                 </Button>
+                                )}
                             </div>
                           </>
                         ) : (
