@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format, parseISO, startOfDay } from 'date-fns';
-import { Users, PlusCircle, Trash2, Loader2, History, Edit, Calendar as CalendarIcon, MapPin, CalendarDays, Clock, Info, DollarSign, FileDown } from 'lucide-react';
+import { Users, PlusCircle, Trash2, Loader2, History, Edit, Calendar as CalendarIcon, MapPin, CalendarDays, Clock, Info, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -21,7 +21,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAppContext } from '@/context/app-context';
 import { useTranslation } from '@/hooks/use-translation';
-import { generatePdfReport } from '@/lib/pdf-generator';
 import { calculateDuration, cn, formatDate, formatTime } from '@/lib/utils';
 import type { TimeEntry } from '@/types';
 
@@ -75,13 +74,6 @@ export function EmployeeManagement() {
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<TimeEntry | null>(null);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
-
-  const handleGenerateReport = (employeeId: string) => {
-    const employee = employees.find(e => e.id === employeeId);
-    if (!employee) return;
-    const employeeEntries = timeEntries.filter(entry => entry.employeeId === employeeId);
-    generatePdfReport(employee, employeeEntries, locations, t, dir === 'rtl', language);
-  };
 
   const timeEntryForm = useForm<z.infer<ReturnType<typeof timeEntrySchema>>>({
     resolver: zodResolver(timeEntrySchema(t)),
@@ -287,14 +279,6 @@ export function EmployeeManagement() {
                           </h4>
                           {hasEntries && (
                              <div className="flex items-center gap-2">
-                              <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleGenerateReport(employee.id)}
-                                >
-                                    <FileDown className="mr-2 h-4 w-4" />
-                                    {t('printReport')}
-                              </Button>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button variant="destructive" size="sm">
