@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format, parseISO, startOfDay } from 'date-fns';
-import { Users, PlusCircle, Trash2, Loader2, History, Edit, Calendar as CalendarIcon, MapPin, CalendarDays, Clock, Info, DollarSign } from 'lucide-react';
+import { Users, PlusCircle, Trash2, Loader2, History, Edit, Calendar as CalendarIcon, MapPin, CalendarDays, Clock, Info, DollarSign, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -22,7 +22,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useAppContext } from '@/context/app-context';
 import { useTranslation } from '@/hooks/use-translation';
 import { calculateDuration, cn, formatDate, formatTime } from '@/lib/utils';
-import type { TimeEntry } from '@/types';
+import { generatePdfReport } from '@/lib/pdf-generator';
+import type { TimeEntry, Employee } from '@/types';
 
 
 const employeeSchema = (t: (key: string) => string) => z.object({
@@ -32,8 +33,8 @@ const employeeSchema = (t: (key: string) => string) => z.object({
 const timeEntrySchema = (t: (key: string) => string) => z.object({
   employeeId: z.string().min(1, t('employeeIsRequired')),
   locationId: z.string().min(1, t('locationIsRequired')),
-  startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, t('invalidTimeFormat')),
-  endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, t('invalidTimeFormat')),
+  startTime: z.string().regex(/^([01]\\d|2[0-3]):([0-5]\\d)$/, t('invalidTimeFormat')),
+  endTime: z.string().regex(/^([01]\\d|2[0-3]):([0-5]\\d)$/, t('invalidTimeFormat')),
   amount: z.coerce.number().optional(),
 }).refine(data => {
   const start = new Date(`1970-01-01T${data.startTime}:00`);
@@ -147,6 +148,20 @@ export function EmployeeManagement() {
   const openDialogForDetails = (entry: TimeEntry) => {
     setSelectedEntry(entry);
     setIsDetailDialogOpen(true);
+  };
+
+  const handleGenerateReport = (employee: Employee) => {
+    const employeeEntries = timeEntries
+      .filter(entry => entry.employeeId === employee.id)
+      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    
+    generatePdfReport(employee, employeeEntries, {
+      t,
+      language,
+      dir,
+      getEmployeeName,
+      getLocationName,
+    });
   };
   
   const handlePaymentClick = (entry: TimeEntry, event: React.MouseEvent) => {
@@ -352,29 +367,35 @@ export function EmployeeManagement() {
                                 ))}
                               </TableBody>
                             </Table>
-                            {totalPages > 1 && (
-                            <div className="flex justify-center items-center mt-4 gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handlePageChange(employee.id, employeeCurrentPage - 1)}
-                                  disabled={employeeCurrentPage === 1}
-                                >
-                                  {t('previous')}
-                                </Button>
-                                <span className="text-sm text-muted-foreground">
-                                  {t('page')} {employeeCurrentPage} {t('of')} {totalPages}
-                                </span>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handlePageChange(employee.id, employeeCurrentPage + 1)}
-                                  disabled={employeeCurrentPage === totalPages}
-                                >
-                                  {t('next')}
+                            <div className="flex flex-col items-center mt-4 gap-4">
+                                {totalPages > 1 && (
+                                <div className="flex justify-center items-center gap-2">
+                                    <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handlePageChange(employee.id, employeeCurrentPage - 1)}
+                                    disabled={employeeCurrentPage === 1}
+                                    >
+                                    {t('previous')}
+                                    </Button>
+                                    <span className="text-sm text-muted-foreground">
+                                    {t('page')} {employeeCurrentPage} {t('of')} {totalPages}
+                                    </span>
+                                    <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handlePageChange(employee.id, employeeCurrentPage + 1)}
+                                    disabled={employeeCurrentPage === totalPages}
+                                    >
+                                    {t('next')}
+                                    </Button>
+                                </div>
+                                )}
+                                <Button onClick={() => handleGenerateReport(employee)} variant="secondary">
+                                  <Printer className="mr-2 h-4 w-4" />
+                                  {t('printReport')}
                                 </Button>
                             </div>
-                            )}
                           </>
                         ) : (
                           <p className='text-sm text-muted-foreground text-center py-4'>{t('noWorkHistory')}</p>
