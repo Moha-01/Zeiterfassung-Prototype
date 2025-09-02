@@ -1,7 +1,6 @@
 // @ts-nocheck
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { amiriFont } from './amiri-font';
 import type { Employee, TimeEntry } from '@/types';
 import { calculateDuration, calculateDurationInHours, formatDate, formatTime } from './utils';
 
@@ -17,17 +16,44 @@ interface TranslationHelpers {
     getLocationName: (id: string) => string;
 }
 
-export const generatePdfReport = (employee: Employee, entries: TimeEntry[], helpers: TranslationHelpers) => {
+// Function to fetch the font and convert it to Base64
+async function getFontAsBase64(fontPath: string): Promise<string> {
+    const response = await fetch(fontPath);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch font: ${response.statusText}`);
+    }
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            // The result is a data URL, we need to extract the Base64 part.
+            const base64data = (reader.result as string).split(',')[1];
+            resolve(base64data);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+
+
+export const generatePdfReport = async (employee: Employee, entries: TimeEntry[], helpers: TranslationHelpers) => {
     const { t, language, dir, getLocationName } = helpers;
     const isRtl = dir === 'rtl';
 
     const doc = new jsPDF() as jsPDFWithAutoTable;
 
-    // Add Amiri font for Arabic support
+    // Add Rubik font for Arabic support
     if (isRtl) {
-        doc.addFileToVFS("Amiri-Regular.ttf", amiriFont);
-        doc.addFont("Amiri-Regular.ttf", "Amiri", "normal");
-        doc.setFont("Amiri");
+        try {
+            const fontBase64 = await getFontAsBase64('/fonts/Rubik-VariableFont_wght.ttf');
+            doc.addFileToVFS("Rubik-Regular.ttf", fontBase64);
+            doc.addFont("Rubik-Regular.ttf", "Rubik", "normal");
+            doc.setFont("Rubik");
+        } catch (error) {
+            console.error("Could not load custom font for PDF, falling back to default.", error);
+            // Fallback to a default font if custom font fails to load
+            doc.setFont('helvetica');
+        }
     } else {
         doc.setFont('helvetica');
     }
@@ -75,11 +101,11 @@ export const generatePdfReport = (employee: Employee, entries: TimeEntry[], help
             textColor: 255,
             fontStyle: 'bold',
             halign: isRtl ? 'right' : 'left',
-            font: isRtl ? 'Amiri' : 'helvetica',
+            font: isRtl ? 'Rubik' : 'helvetica',
         },
         bodyStyles: {
             halign: isRtl ? 'right' : 'left',
-            font: isRtl ? 'Amiri' : 'helvetica',
+            font: isRtl ? 'Rubik' : 'helvetica',
         },
         columnStyles: {
             0: { halign: 'center' }
@@ -133,11 +159,11 @@ export const generatePdfReport = (employee: Employee, entries: TimeEntry[], help
             textColor: 255,
             fontStyle: 'bold',
             halign: isRtl ? 'right' : 'left',
-            font: isRtl ? 'Amiri' : 'helvetica',
+            font: isRtl ? 'Rubik' : 'helvetica',
         },
         bodyStyles: {
             halign: isRtl ? 'right' : 'left',
-            font: isRtl ? 'Amiri' : 'helvetica',
+            font: isRtl ? 'Rubik' : 'helvetica',
         },
         didDrawPage: (data) => {
             // Footer

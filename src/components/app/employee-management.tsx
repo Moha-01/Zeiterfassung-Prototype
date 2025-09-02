@@ -33,8 +33,8 @@ const employeeSchema = (t: (key: string) => string) => z.object({
 const timeEntrySchema = (t: (key: string) => string) => z.object({
   employeeId: z.string().min(1, t('employeeIsRequired')),
   locationId: z.string().min(1, t('locationIsRequired')),
-  startTime: z.string().regex(/^([01]\\d|2[0-3]):([0-5]\\d)$/, t('invalidTimeFormat')),
-  endTime: z.string().regex(/^([01]\\d|2[0-3]):([0-5]\\d)$/, t('invalidTimeFormat')),
+  startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, t('invalidTimeFormat')),
+  endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, t('invalidTimeFormat')),
   amount: z.coerce.number().optional(),
 }).refine(data => {
   const start = new Date(`1970-01-01T${data.startTime}:00`);
