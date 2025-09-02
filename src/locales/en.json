@@ -71,5 +71,11 @@
   "locationNameRequired": "Location name is required.",
   "deleteErrorTitle": "Error deleting",
   "deleteEmployeeErrorDescription": "Employee cannot be deleted as time entries still exist.",
-  "deleteLocationErrorDescription": "Location cannot be deleted as time entries still exist."
+  "deleteLocationErrorDescription": "Location cannot be deleted as time entries still exist.",
+  "enterPaymentAmount": "Enter Payment Amount",
+  "amount": "Amount",
+  "currency": "IQD",
+  "saveAndMarkPaid": "Save & Mark as Paid",
+  "paymentAmountRequired": "Amount must be a positive number.",
+  "amountPaid": "Amount Paid"
 }

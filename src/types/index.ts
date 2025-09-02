@@ -5,6 +5,7 @@ export type TimeEntry = {
   startTime: string; // ISO string
   endTime: string; // ISO string
   paid: boolean;
+  amount?: number;
 };
 
 export type Employee = {

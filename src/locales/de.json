@@ -71,5 +71,11 @@
   "locationNameRequired": "Name des Arbeitsortes ist erforderlich.",
   "deleteErrorTitle": "Fehler beim Löschen",
   "deleteEmployeeErrorDescription": "Mitarbeiter kann nicht gelöscht werden, da noch Zeiteinträge vorhanden sind.",
-  "deleteLocationErrorDescription": "Arbeitsort kann nicht gelöscht werden, da noch Zeiteinträge vorhanden sind."
+  "deleteLocationErrorDescription": "Arbeitsort kann nicht gelöscht werden, da noch Zeiteinträge vorhanden sind.",
+  "enterPaymentAmount": "Zahlungsbetrag eingeben",
+  "amount": "Betrag",
+  "currency": "IQD",
+  "saveAndMarkPaid": "Speichern & als bezahlt markieren",
+  "paymentAmountRequired": "Betrag muss eine positive Zahl sein.",
+  "amountPaid": "Bezahlter Betrag"
 }

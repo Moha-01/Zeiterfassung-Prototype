@@ -80,6 +80,10 @@ const timeEntrySchema = (t: (key: string) => string) => z.object({
   path: ['endTime'],
 });
 
+const paymentSchema = (t: (key: string) => string) => z.object({
+  amount: z.coerce.number().min(0, t('paymentAmountRequired')),
+});
+
 
 interface TimeLogListProps {
   entries: TimeEntry[];
@@ -105,10 +109,15 @@ export function TimeLogList({
   const [selectedEntry, setSelectedEntry] = useState<TimeEntry | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
 
 
   const form = useForm<z.infer<ReturnType<typeof timeEntrySchema>>>({
     resolver: zodResolver(timeEntrySchema(t)),
+  });
+
+  const paymentForm = useForm<z.infer<ReturnType<typeof paymentSchema>>>({
+    resolver: zodResolver(paymentSchema(t)),
   });
 
   const getEmployeeName = (employeeId: string) => employees.find(e => e.id === employeeId)?.name || t('unknown');
@@ -166,20 +175,41 @@ export function TimeLogList({
     };
 
     if (editingEntry) {
-      onUpdateEntry({ ...entryData, id: editingEntry.id, paid: editingEntry.paid });
+      onUpdateEntry({ ...entryData, id: editingEntry.id, paid: editingEntry.paid, amount: editingEntry.amount });
     } else {
       onAddEntry(entryData);
     }
     setIsFormDialogOpen(false);
   };
+
+  function onPaymentSubmit(values: z.infer<ReturnType<typeof paymentSchema>>) {
+    if (selectedEntry) {
+      const updatedEntry = { ...selectedEntry, paid: true, amount: values.amount };
+      onUpdateEntry(updatedEntry);
+      // Also update the selected entry in the detail view if it's open
+      if (isDetailDialogOpen) {
+          setSelectedEntry(updatedEntry);
+      }
+    }
+    setIsPaymentDialogOpen(false);
+    paymentForm.reset();
+  }
   
   const dayEntries = entries
     .filter((entry) => isSameDay(parseISO(entry.startTime), selectedDate))
     .sort((a, b) => parseISO(b.startTime).getTime() - parseISO(a.startTime).getTime());
 
-  const togglePaidStatus = (entry: TimeEntry, event: React.MouseEvent) => {
+  const openPaymentDialog = (entry: TimeEntry, event: React.MouseEvent) => {
     event.stopPropagation();
-    onUpdateEntry({ ...entry, paid: !entry.paid });
+    // If it's already paid, toggle to unpaid and remove amount
+    if (entry.paid) {
+        onUpdateEntry({ ...entry, paid: false, amount: undefined });
+    } else {
+        // If it's not paid, open dialog to enter amount
+        setSelectedEntry(entry);
+        paymentForm.reset({ amount: entry.amount || 0 });
+        setIsPaymentDialogOpen(true);
+    }
   };
 
 
@@ -360,7 +390,7 @@ export function TimeLogList({
                                     <p className="font-medium">{getEmployeeName(entry.employeeId)}</p>
                                     <p className="text-sm text-muted-foreground">{getLocationName(entry.locationId)}</p>
                                 </div>
-                                <button onClick={(e) => togglePaidStatus(entry, e)} className="p-1 -m-1 border rounded-md">
+                                <button onClick={(e) => openPaymentDialog(entry, e)} className="p-1 -m-1 border rounded-md">
                                   {entry.paid ? <DollarSign className="h-5 w-5 text-green-500" /> : <DollarSign className="h-5 w-5 text-destructive" />}
                                 </button>
                               </div>
@@ -394,7 +424,7 @@ export function TimeLogList({
                                 <TableCell>{formatTime(entry.endTime)}</TableCell>
                                 <TableCell>{calculateDuration(entry.startTime, entry.endTime)}</TableCell>
                                 <TableCell>
-                                   <button onClick={(e) => togglePaidStatus(entry, e)} className="p-1 border rounded-md">
+                                   <button onClick={(e) => openPaymentDialog(entry, e)} className="p-1 border rounded-md">
                                     {entry.paid ? <DollarSign className="h-5 w-5 text-green-500" /> : <DollarSign className="h-5 w-5 text-destructive" />}
                                   </button>
                                 </TableCell>
@@ -463,7 +493,7 @@ export function TimeLogList({
                         id="paid"
                         checked={selectedEntry.paid}
                         onCheckedChange={(checked) => {
-                            const newEntry = { ...selectedEntry, paid: !!checked };
+                            const newEntry = { ...selectedEntry, paid: !!checked, amount: checked ? selectedEntry.amount : undefined };
                             onUpdateEntry(newEntry);
                             setSelectedEntry(newEntry);
                         }}
@@ -475,6 +505,15 @@ export function TimeLogList({
                         {t('markAsPaid')}
                     </label>
                  </div>
+                 {selectedEntry.paid && selectedEntry.amount && (
+                    <div className="flex items-center gap-4">
+                        <DollarSign className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                        <p className="text-sm text-muted-foreground">{t('amountPaid')}</p>
+                        <p className="font-medium">{selectedEntry.amount.toLocaleString()} {t('currency')}</p>
+                        </div>
+                    </div>
+                )}
                 </div>
                 <DialogFooter className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                    <AlertDialog>
@@ -508,6 +547,39 @@ export function TimeLogList({
             )}
           </DialogContent>
         </Dialog>
+        
+        {/* Payment Dialog */}
+        <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{t('enterPaymentAmount')}</DialogTitle>
+                </DialogHeader>
+                <Form {...paymentForm}>
+                    <form onSubmit={paymentForm.handleSubmit(onPaymentSubmit)} className="space-y-4">
+                        <FormField
+                        control={paymentForm.control}
+                        name="amount"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>{t('amount')} ({t('currency')})</FormLabel>
+                            <FormControl>
+                                <Input type="number" placeholder="e.g. 50000" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                        <DialogFooter>
+                        <DialogClose asChild>
+                            <Button type="button" variant="secondary">{t('cancel')}</Button>
+                        </DialogClose>
+                        <Button type="submit">{t('saveAndMarkPaid')}</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+
 
       </CardContent>
     </Card>

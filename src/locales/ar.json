@@ -71,5 +71,11 @@
   "locationNameRequired": "اسم الموقع مطلوب.",
   "deleteErrorTitle": "خطأ في الحذف",
   "deleteEmployeeErrorDescription": "لا يمكن حذف الموظف لأنه لا تزال هناك إدخالات وقت.",
-  "deleteLocationErrorDescription": "لا يمكن حذف الموقع لأنه لا تزال هناك إدخالات وقت."
+  "deleteLocationErrorDescription": "لا يمكن حذف الموقع لأنه لا تزال هناك إدخالات وقت.",
+  "enterPaymentAmount": "أدخل مبلغ الدفع",
+  "amount": "المبلغ",
+  "currency": "دينار عراقي",
+  "saveAndMarkPaid": "حفظ ووضع علامة كمدفوع",
+  "paymentAmountRequired": "يجب أن يكون المبلغ رقمًا موجبًا.",
+  "amountPaid": "المبلغ المدفوع"
 }

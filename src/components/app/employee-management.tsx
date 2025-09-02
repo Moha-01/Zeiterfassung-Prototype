@@ -60,6 +60,10 @@ const timeEntrySchema = (t: (key: string) => string) => z.object({
   path: ['endTime'],
 });
 
+const paymentSchema = (t: (key: string) => string) => z.object({
+  amount: z.coerce.number().min(0, t('paymentAmountRequired')),
+});
+
 
 interface EmployeeManagementProps {
   employees: Employee[];
@@ -85,10 +89,15 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<TimeEntry | null>(null);
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
 
 
   const timeEntryForm = useForm<z.infer<ReturnType<typeof timeEntrySchema>>>({
     resolver: zodResolver(timeEntrySchema(t)),
+  });
+  
+  const paymentForm = useForm<z.infer<ReturnType<typeof paymentSchema>>>({
+    resolver: zodResolver(paymentSchema(t)),
   });
 
   const employeeForm = useForm<z.infer<ReturnType<typeof employeeSchema>>>({
@@ -123,9 +132,18 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
     };
 
     if (editingEntry) {
-      onUpdateEntry({ ...entryData, id: editingEntry.id, paid: editingEntry.paid });
+      onUpdateEntry({ ...entryData, id: editingEntry.id, paid: editingEntry.paid, amount: editingEntry.amount });
     }
     setIsEditFormDialogOpen(false);
+  }
+
+  function onPaymentSubmit(values: z.infer<ReturnType<typeof paymentSchema>>) {
+    if (selectedEntry) {
+      onUpdateEntry({ ...selectedEntry, paid: true, amount: values.amount });
+      setSelectedEntry({ ...selectedEntry, paid: true, amount: values.amount });
+    }
+    setIsPaymentDialogOpen(false);
+    paymentForm.reset();
   }
   
   const openDialogForEdit = (entry: TimeEntry) => {
@@ -145,14 +163,21 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
     setSelectedEntry(entry);
     setIsDetailDialogOpen(true);
   };
+  
+  const openPaymentDialog = (entry: TimeEntry, event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (entry.paid && entry.amount) {
+        onUpdateEntry({ ...entry, paid: false, amount: undefined });
+    } else {
+        setSelectedEntry(entry);
+        paymentForm.reset({ amount: entry.amount || 0 });
+        setIsPaymentDialogOpen(true);
+    }
+  };
 
 
   const getLocationName = (locationId: string) => locations.find((l) => l.id === locationId)?.name || t('unknown');
 
-  const togglePaidStatus = (entry: TimeEntry, event: React.MouseEvent) => {
-    event.stopPropagation();
-    onUpdateEntry({ ...entry, paid: !entry.paid });
-  };
 
   return (
     <Card>
@@ -306,7 +331,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                                    <TableCell>{getLocationName(entry.locationId)}</TableCell>
                                    <TableCell>{calculateDuration(entry.startTime, entry.endTime)}</TableCell>
                                    <TableCell>
-                                    <button onClick={(e) => togglePaidStatus(entry, e)} className="p-1 border rounded-md">
+                                    <button onClick={(e) => openPaymentDialog(entry, e)} className="p-1 border rounded-md">
                                       {entry.paid ? <DollarSign className="h-5 w-5 text-green-500" /> : <DollarSign className="h-5 w-5 text-destructive" />}
                                     </button>
                                    </TableCell>
@@ -526,7 +551,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                         id="paid"
                         checked={selectedEntry.paid}
                         onCheckedChange={(checked) => {
-                            const newEntry = { ...selectedEntry, paid: !!checked };
+                            const newEntry = { ...selectedEntry, paid: !!checked, amount: checked ? selectedEntry.amount : undefined };
                             onUpdateEntry(newEntry);
                             setSelectedEntry(newEntry);
                         }}
@@ -538,6 +563,15 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                         {t('markAsPaid')}
                     </label>
                  </div>
+                 {selectedEntry.paid && selectedEntry.amount && (
+                    <div className="flex items-center gap-4">
+                        <DollarSign className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                        <p className="text-sm text-muted-foreground">{t('amountPaid')}</p>
+                        <p className="font-medium">{selectedEntry.amount.toLocaleString()} {t('currency')}</p>
+                        </div>
+                    </div>
+                )}
                 </div>
                 <DialogFooter className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                    <AlertDialog>
@@ -571,6 +605,39 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
             )}
           </DialogContent>
         </Dialog>
+        
+        {/* Payment Dialog */}
+        <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{t('enterPaymentAmount')}</DialogTitle>
+                </DialogHeader>
+                <Form {...paymentForm}>
+                    <form onSubmit={paymentForm.handleSubmit(onPaymentSubmit)} className="space-y-4">
+                        <FormField
+                        control={paymentForm.control}
+                        name="amount"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>{t('amount')} ({t('currency')})</FormLabel>
+                            <FormControl>
+                                <Input type="number" placeholder="e.g. 50000" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                        <DialogFooter>
+                        <DialogClose asChild>
+                            <Button type="button" variant="secondary">{t('cancel')}</Button>
+                        </DialogClose>
+                        <Button type="submit">{t('saveAndMarkPaid')}</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+
     </Card>
   );
 }
