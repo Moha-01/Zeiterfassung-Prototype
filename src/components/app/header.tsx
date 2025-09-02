@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useRef } from 'react';
 import { Clock, Globe, Check } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
 import {
@@ -10,12 +11,37 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 
-export function Header() {
+interface HeaderProps {
+  onGenerateDemoData: () => void;
+}
+
+export function Header({ onGenerateDemoData }: HeaderProps) {
   const { t, language, setLanguage, languages } = useTranslation();
+  const [tapCount, setTapCount] = useState(0);
+  const tapTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  const handleHeaderClick = () => {
+    if (tapTimeout.current) {
+      clearTimeout(tapTimeout.current);
+    }
+    
+    const newTapCount = tapCount + 1;
+    setTapCount(newTapCount);
+
+    if (newTapCount === 10) {
+      onGenerateDemoData();
+      setTapCount(0);
+    } else {
+      tapTimeout.current = setTimeout(() => {
+        setTapCount(0);
+      }, 1000); // Reset after 1 second of inactivity
+    }
+  };
+
 
   return (
     <header className="flex items-center justify-between p-4 bg-card shadow-md rounded-lg">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3" onClick={handleHeaderClick} style={{ cursor: 'pointer' }}>
         <Clock className="w-8 h-8 text-primary" />
         <h1 className="text-2xl font-bold text-primary">{t('appTitle')}</h1>
       </div>
