@@ -175,6 +175,7 @@ export const generatePdfReport = async (employee: Employee, entries: TimeEntry[]
             // Footer
             const pageCount = doc.internal.getNumberOfPages();
             doc.setFontSize(10);
+            doc.setFont(isRtl ? 'Rubik' : 'helvetica');
             const pageText = `${t('page')} ${data.pageNumber} ${t('of')} ${pageCount}`;
             doc.text(pageText, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: 'center' });
         }
