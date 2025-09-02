@@ -1,28 +1,34 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { format, parseISO, differenceInMinutes, getWeek } from "date-fns"
-import { de } from 'date-fns/locale'
+import { de, enUS, ar } from 'date-fns/locale'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatDateTime(isoString: string) {
-  if (!isoString) return ''
-  const date = parseISO(isoString)
-  return format(date, "dd.MM.yyyy, HH:mm", { locale: de })
+const getLocale = (localeStr?: string) => {
+  if (localeStr === 'ar-EG') return ar;
+  if (localeStr === 'de-DE') return de;
+  return enUS;
 }
 
-export function formatDate(isoString: string) {
+export function formatDateTime(isoString: string, localeStr?: string) {
   if (!isoString) return ''
   const date = parseISO(isoString)
-  return format(date, "dd.MM.yyyy", { locale: de })
+  return format(date, "dd.MM.yyyy, HH:mm", { locale: getLocale(localeStr) })
 }
 
-export function formatTime(isoString: string) {
+export function formatDate(isoString: string, localeStr?: string) {
   if (!isoString) return ''
   const date = parseISO(isoString)
-  return format(date, "HH:mm", { locale: de })
+  return format(date, "dd.MM.yyyy", { locale: getLocale(localeStr) })
+}
+
+export function formatTime(isoString: string, localeStr?: string) {
+  if (!isoString) return ''
+  const date = parseISO(isoString)
+  return format(date, "HH:mm", { locale: getLocale(localeStr) })
 }
 
 export function calculateDuration(startTime: string, endTime: string) {

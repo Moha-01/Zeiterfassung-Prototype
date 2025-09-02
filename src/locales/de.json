@@ -1,3 +1,4 @@
+
 {
   "appTitle": "Zeit Meister",
   "timeTracking": "Zeiterfassung",
@@ -89,5 +90,7 @@
   "status": "Status",
   "unpaid": "Unbezahlt",
   "reportGeneratedBy": "Bericht erstellt von",
-  "optional": "optional"
+  "optional": "optional",
+  "demoDataGenerated": "Demodaten generiert",
+  "demoDataGeneratedDescription": "Die Anwendung wurde mit Beispieldaten gefüllt."
 }

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -5,7 +6,6 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { MapPin, PlusCircle, Trash2, Loader2 } from 'lucide-react';
-import type { Location, TimeEntry } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -25,29 +25,23 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
   DialogClose,
+  DialogFooter
 } from '@/components/ui/dialog';
 import { useTranslation } from '@/hooks/use-translation';
+import { useAppContext } from '@/context/app-context';
 
 
 const locationSchema = (t: (key: string) => string) => z.object({
   name: z.string().min(1, t('locationNameRequired')),
 });
 
-interface LocationManagementProps {
-  locations: Location[];
-  timeEntries: TimeEntry[];
-  onAddLocation: (location: Omit<Location, 'id'>) => void;
-  onDeleteLocation: (id: string) => void;
-}
-
-export function LocationManagement({ locations, timeEntries, onAddLocation, onDeleteLocation }: LocationManagementProps) {
+export function LocationManagement() {
   const { t } = useTranslation();
+  const { locations, addLocation, deleteLocation, timeEntries } = useAppContext();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const form = useForm<z.infer<ReturnType<typeof locationSchema>>>({
@@ -57,7 +51,7 @@ export function LocationManagement({ locations, timeEntries, onAddLocation, onDe
 
   async function onSubmit(values: z.infer<ReturnType<typeof locationSchema>>) {
     setIsSubmitting(true);
-    onAddLocation({ name: values.name });
+    addLocation({ name: values.name });
     form.reset();
     setIsSubmitting(false);
     setIsDialogOpen(false);
@@ -149,7 +143,7 @@ export function LocationManagement({ locations, timeEntries, onAddLocation, onDe
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => onDeleteLocation(location.id)}>{t('delete')}</AlertDialogAction>
+                              <AlertDialogAction onClick={() => deleteLocation(location.id)}>{t('delete')}</AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>

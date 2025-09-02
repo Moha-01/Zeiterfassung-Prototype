@@ -1,48 +1,29 @@
+
 'use client';
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format, parse, parseISO, startOfDay } from 'date-fns';
+import { format, parseISO, startOfDay } from 'date-fns';
 import { Users, PlusCircle, Trash2, Loader2, History, Edit, Calendar as CalendarIcon, MapPin, CalendarDays, Clock, Info, DollarSign, FileDown } from 'lucide-react';
-import type { Employee, TimeEntry, Location } from '@/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Calendar } from '@/components/ui/calendar';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { calculateDuration, formatDate, cn, formatTime } from '@/lib/utils';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { 
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useAppContext } from '@/context/app-context';
 import { useTranslation } from '@/hooks/use-translation';
-import { EmployeeReport } from './employee-report';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import { generatePdfReport } from '@/lib/pdf-generator';
+import { calculateDuration, cn, formatDate, formatTime } from '@/lib/utils';
+import type { TimeEntry } from '@/types';
 
 
 const employeeSchema = (t: (key: string) => string) => z.object({
@@ -56,8 +37,8 @@ const timeEntrySchema = (t: (key: string) => string) => z.object({
   endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, t('invalidTimeFormat')),
   amount: z.coerce.number().optional(),
 }).refine(data => {
-  const start = parse(data.startTime, 'HH:mm', new Date());
-  const end = parse(data.endTime, 'HH:mm', new Date());
+  const start = new Date(`1970-01-01T${data.startTime}:00`);
+  const end = new Date(`1970-01-01T${data.endTime}:00`);
   return start < end;
 }, {
   message: t('endTimeAfterStartTime'),
@@ -68,25 +49,25 @@ const paymentSchema = (t: (key: string) => string) => z.object({
   amount: z.coerce.number().min(0, t('paymentAmountRequired')),
 });
 
-
-interface EmployeeManagementProps {
-  employees: Employee[];
-  timeEntries: TimeEntry[];
-  locations: Location[];
-  onAddEmployee: (employee: Omit<Employee, 'id'>) => void;
-  onDeleteEmployee: (id: string) => void;
-  onUpdateEntry: (entry: TimeEntry) => void;
-  onDeleteEntry: (id: string) => void;
-  onDeleteAllEntries: (employeeId: string) => void;
-}
-
 const ENTRIES_PER_PAGE = 5;
 
-export function EmployeeManagement({ employees, timeEntries, locations, onAddEmployee, onDeleteEmployee, onUpdateEntry, onDeleteEntry, onDeleteAllEntries }: EmployeeManagementProps) {
-  const { t } = useTranslation();
+export function EmployeeManagement() {
+  const { t, language, dir } = useTranslation();
+  const { 
+    employees, 
+    locations, 
+    timeEntries, 
+    addEmployee, 
+    deleteEmployee, 
+    updateTimeEntry, 
+    deleteTimeEntry,
+    deleteTimeEntriesForEmployee, 
+    getLocationName 
+  } = useAppContext();
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState<{ [key: string]: number }>({});
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
   const [isEditFormDialogOpen, setIsEditFormDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
@@ -94,8 +75,13 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<TimeEntry | null>(null);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
-  const [isReportVisible, setIsReportVisible] = useState(false);
-  const [reportEmployee, setReportEmployee] = useState<Employee | null>(null);
+
+  const handleGenerateReport = (employeeId: string) => {
+    const employee = employees.find(e => e.id === employeeId);
+    if (!employee) return;
+    const employeeEntries = timeEntries.filter(entry => entry.employeeId === employeeId);
+    generatePdfReport(employee, employeeEntries, locations, t, dir === 'rtl', language);
+  };
 
   const timeEntryForm = useForm<z.infer<ReturnType<typeof timeEntrySchema>>>({
     resolver: zodResolver(timeEntrySchema(t)),
@@ -112,7 +98,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
 
   async function onEmployeeSubmit(values: z.infer<ReturnType<typeof employeeSchema>>) {
     setIsSubmitting(true);
-    onAddEmployee({ name: values.name });
+    addEmployee({ name: values.name });
     employeeForm.reset();
     setIsSubmitting(false);
     setIsAddFormOpen(false);
@@ -138,14 +124,14 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
     };
 
     if (editingEntry) {
-      onUpdateEntry({ ...entryData, id: editingEntry.id, paid: editingEntry.paid });
+      updateTimeEntry({ ...entryData, id: editingEntry.id, paid: editingEntry.paid });
     }
     setIsEditFormDialogOpen(false);
   }
 
   function onPaymentSubmit(values: z.infer<ReturnType<typeof paymentSchema>>) {
     if (selectedEntry) {
-      onUpdateEntry({ ...selectedEntry, paid: true, amount: values.amount });
+      updateTimeEntry({ ...selectedEntry, paid: true, amount: values.amount });
       setSelectedEntry({ ...selectedEntry, paid: true, amount: values.amount });
     }
     setIsPaymentDialogOpen(false);
@@ -174,7 +160,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
   const openPaymentDialog = (entry: TimeEntry, event: React.MouseEvent) => {
     event.stopPropagation();
     if (entry.paid && entry.amount) {
-        onUpdateEntry({ ...entry, paid: false, amount: undefined });
+        updateTimeEntry({ ...entry, paid: false, amount: undefined });
     } else {
         setSelectedEntry(entry);
         paymentForm.reset({ amount: entry.amount || 0 });
@@ -182,36 +168,9 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
     }
   };
 
-  const generateReport = async (employee: Employee) => {
-    setReportEmployee(employee);
-    setIsReportVisible(true);
-
-    // Allow the report component to render before generating the PDF
-    setTimeout(async () => {
-        const reportElement = document.getElementById('employee-report');
-        if (reportElement) {
-            const canvas = await html2canvas(reportElement, { scale: 2 });
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const imgWidth = canvas.width;
-            const imgHeight = canvas.height;
-            const ratio = imgWidth / imgHeight;
-            const finalImgWidth = pdfWidth;
-            const finalImgHeight = pdfWidth / ratio;
-            let position = 0;
-
-            pdf.addImage(imgData, 'PNG', 0, position, finalImgWidth, finalImgHeight);
-            pdf.save(`${employee.name}-report.pdf`);
-        }
-        setIsReportVisible(false);
-        setReportEmployee(null);
-    }, 500);
-};
-
-  const getLocationName = (locationId: string) => locations.find((l) => l.id === locationId)?.name || t('unknown');
-
+  const handlePageChange = (employeeId: string, newPage: number) => {
+    setCurrentPage(prev => ({...prev, [employeeId]: newPage}));
+  }
 
   return (
     <>
@@ -272,8 +231,9 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                   .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
                 
                 const hasEntries = employeeWorkHistory.length > 0;
+                const employeeCurrentPage = currentPage[employee.id] || 1;
                 const totalPages = Math.ceil(employeeWorkHistory.length / ENTRIES_PER_PAGE);
-                const paginatedEntries = employeeWorkHistory.slice((currentPage - 1) * ENTRIES_PER_PAGE, currentPage * ENTRIES_PER_PAGE);
+                const paginatedEntries = employeeWorkHistory.slice((employeeCurrentPage - 1) * ENTRIES_PER_PAGE, employeeCurrentPage * ENTRIES_PER_PAGE);
 
                 return (
                   <Collapsible key={employee.id} onOpenChange={(isOpen) => {
@@ -281,8 +241,8 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                       setSelectedEmployeeId(null);
                     } else if (isOpen) {
                       setSelectedEmployeeId(employee.id);
+                      handlePageChange(employee.id, 1);
                     }
-                    setCurrentPage(1);
                   }} open={selectedEmployeeId === employee.id}>
                     <div className={`flex items-center justify-between rounded-md border p-2 ${selectedEmployeeId === employee.id ? 'bg-secondary' : ''}`}>
                       <CollapsibleTrigger asChild>
@@ -311,7 +271,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => onDeleteEmployee(employee.id)}>{t('delete')}</AlertDialogAction>
+                              <AlertDialogAction onClick={() => deleteEmployee(employee.id)}>{t('delete')}</AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
@@ -326,26 +286,36 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                             {t('workHistory')}
                           </h4>
                           {hasEntries && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="sm">
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  {t('deleteHistory')}
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>{t('areYouSure')}</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    {t('deleteAllEntriesConfirmation')}
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => onDeleteAllEntries(employee.id)}>{t('deleteAll')}</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                             <div className="flex items-center gap-2">
+                              <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleGenerateReport(employee.id)}
+                                >
+                                    <FileDown className="mr-2 h-4 w-4" />
+                                    {t('printReport')}
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="destructive" size="sm">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    {t('deleteHistory')}
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>{t('areYouSure')}</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      {t('deleteAllEntriesConfirmation')}
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => deleteTimeEntriesForEmployee(employee.id)}>{t('deleteAll')}</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
                           )}
                         </div>
                         {hasEntries ? (
@@ -374,33 +344,25 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                                 ))}
                               </TableBody>
                             </Table>
-                            <div className="flex justify-between items-center mt-4">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => generateReport(employee)}
-                                >
-                                    <FileDown className="mr-2 h-4 w-4" />
-                                    {t('printReport')}
-                                </Button>
+                            <div className="flex justify-end items-center mt-4">
                                 {totalPages > 1 && (
                                 <div className="flex justify-end items-center gap-2">
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                    disabled={currentPage === 1}
+                                    onClick={() => handlePageChange(employee.id, employeeCurrentPage - 1)}
+                                    disabled={employeeCurrentPage === 1}
                                   >
                                     {t('previous')}
                                   </Button>
                                   <span className="text-sm text-muted-foreground">
-                                    {t('page')} {currentPage} {t('of')} {totalPages}
+                                    {t('page')} {employeeCurrentPage} {t('of')} {totalPages}
                                   </span>
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                    disabled={currentPage === totalPages}
+                                    onClick={() => handlePageChange(employee.id, employeeCurrentPage + 1)}
+                                    disabled={employeeCurrentPage === totalPages}
                                   >
                                     {t('next')}
                                   </Button>
@@ -611,14 +573,14 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                           onCheckedChange={(checked) => {
                               if (!checked) {
                                 const newEntry = { ...selectedEntry, paid: false, amount: undefined };
-                                onUpdateEntry(newEntry);
+                                updateTimeEntry(newEntry);
                                 setSelectedEntry(newEntry);
                               } else if (selectedEntry.amount === undefined) {
                                   setIsPaymentDialogOpen(true)
                               }
                                else {
                                   const newEntry = { ...selectedEntry, paid: true };
-                                  onUpdateEntry(newEntry);
+                                  updateTimeEntry(newEntry);
                                   setSelectedEntry(newEntry);
                               }
                           }}
@@ -657,7 +619,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
                           <AlertDialogFooter>
                             <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
                             <AlertDialogAction onClick={() => {
-                              onDeleteEntry(selectedEntry.id);
+                              deleteTimeEntry(selectedEntry.id);
                               setIsDetailDialogOpen(false);
                             }}>{t('delete')}</AlertDialogAction>
                           </AlertDialogFooter>
@@ -705,15 +667,6 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
               </DialogContent>
           </Dialog>
       </Card>
-      {isReportVisible && reportEmployee && (
-        <div className="fixed -left-[9999px] -top-[9999px] opacity-0 pointer-events-none">
-          <EmployeeReport
-            employee={reportEmployee}
-            timeEntries={timeEntries.filter(e => e.employeeId === reportEmployee.id).sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())}
-            locations={locations}
-          />
-        </div>
-      )}
     </>
   );
 }

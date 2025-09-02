@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useRef } from 'react';
@@ -10,13 +11,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { useAppContext } from '@/context/app-context';
 
-interface HeaderProps {
-  onGenerateDemoData: () => void;
-}
-
-export function Header({ onGenerateDemoData }: HeaderProps) {
+export function Header() {
   const { t, language, setLanguage, languages } = useTranslation();
+  const { generateDemoData } = useAppContext();
   const [tapCount, setTapCount] = useState(0);
   const tapTimeout = useRef<NodeJS.Timeout | null>(null);
 
@@ -28,8 +27,8 @@ export function Header({ onGenerateDemoData }: HeaderProps) {
     const newTapCount = tapCount + 1;
     setTapCount(newTapCount);
 
-    if (newTapCount === 10) {
-      onGenerateDemoData();
+    if (newTapCount >= 10) {
+      generateDemoData();
       setTapCount(0);
     } else {
       tapTimeout.current = setTimeout(() => {

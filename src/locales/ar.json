@@ -1,3 +1,4 @@
+
 {
   "appTitle": "سيد الوقت",
   "timeTracking": "تتبع الوقت",
@@ -89,5 +90,7 @@
   "status": "الحالة",
   "unpaid": "غير مدفوع",
   "reportGeneratedBy": "تم إنشاء التقرير بواسطة",
-  "optional": "اختياري"
+  "optional": "اختياري",
+  "demoDataGenerated": "تم إنشاء بيانات العرض التوضيحي",
+  "demoDataGeneratedDescription": "تم ملء التطبيق ببيانات نموذجية."
 }
