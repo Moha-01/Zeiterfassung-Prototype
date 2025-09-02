@@ -27,10 +27,6 @@ export const EmployeeReport = ({ employee, timeEntries, locations }: EmployeeRep
     .filter(entry => entry.paid && entry.amount)
     .reduce((acc, entry) => acc + (entry.amount || 0), 0);
 
-  const totalUnpaidAmount = timeEntries
-    .filter(entry => !entry.paid && entry.amount)
-    .reduce((acc, entry) => acc + (entry.amount || 0), 0);
-
   return (
     <div id="employee-report" className="bg-white p-8 font-sans text-gray-800" style={{ width: '210mm', minHeight: '297mm' }}>
       <header className="flex items-center justify-between pb-4 border-b-2 border-gray-200">
@@ -56,7 +52,7 @@ export const EmployeeReport = ({ employee, timeEntries, locations }: EmployeeRep
 
       <section className="mt-8">
         <h3 className="text-xl font-semibold mb-2">{t('summary')}</h3>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <div className="p-4 bg-gray-100 rounded-lg text-center">
             <p className="text-sm text-gray-500">{t('totalHours')}</p>
             <p className="text-2xl font-bold">{totalHours}h</p>
@@ -64,10 +60,6 @@ export const EmployeeReport = ({ employee, timeEntries, locations }: EmployeeRep
           <div className="p-4 bg-green-100 rounded-lg text-center">
             <p className="text-sm text-green-700">{t('totalPaid')}</p>
             <p className="text-2xl font-bold text-green-800">{totalPaidAmount.toLocaleString()} {t('currency')}</p>
-          </div>
-          <div className="p-4 bg-red-100 rounded-lg text-center">
-            <p className="text-sm text-red-700">{t('totalUnpaid')}</p>
-            <p className="text-2xl font-bold text-red-800">{totalUnpaidAmount.toLocaleString()} {t('currency')}</p>
           </div>
         </div>
       </section>
