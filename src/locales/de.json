@@ -92,5 +92,7 @@
   "reportGeneratedBy": "Bericht erstellt von",
   "optional": "optional",
   "demoDataGenerated": "Demodaten generiert",
-  "demoDataGeneratedDescription": "Die Anwendung wurde mit Beispieldaten gefüllt."
+  "demoDataGeneratedDescription": "Die Anwendung wurde mit Beispieldaten gefüllt.",
+  "unmarkAsPaidConfirmation": "Möchten Sie den Status 'bezahlt' wirklich entfernen? Der Betrag wird ebenfalls gelöscht.",
+  "unmarkAsPaid": "Zahlung entfernen"
 }

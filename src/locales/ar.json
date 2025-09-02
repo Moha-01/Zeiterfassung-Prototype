@@ -92,5 +92,7 @@
   "reportGeneratedBy": "تم إنشاء التقرير بواسطة",
   "optional": "اختياري",
   "demoDataGenerated": "تم إنشاء بيانات العرض التوضيحي",
-  "demoDataGeneratedDescription": "تم ملء التطبيق ببيانات نموذجية."
+  "demoDataGeneratedDescription": "تم ملء التطبيق ببيانات نموذجية.",
+  "unmarkAsPaidConfirmation": "هل تريد حقًا إزالة الحالة 'مدفوع'؟ سيتم أيضًا حذف المبلغ.",
+  "unmarkAsPaid": "إزالة الدفع"
 }

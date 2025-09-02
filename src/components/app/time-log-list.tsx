@@ -91,12 +91,12 @@ const paymentSchema = (t: (key: string) => string) => z.object({
 export function TimeLogList() {
   const { t } = useTranslation();
   const { 
-    timeEntries: entries, 
+    timeEntries, 
     employees, 
     locations, 
-    addTimeEntry: onAddEntry, 
-    updateTimeEntry: onUpdateEntry, 
-    deleteTimeEntry: onDeleteEntry,
+    addTimeEntry, 
+    updateTimeEntry, 
+    deleteTimeEntry,
     getEmployeeName,
     getLocationName
   } = useAppContext();
@@ -173,9 +173,9 @@ export function TimeLogList() {
     };
 
     if (editingEntry) {
-      onUpdateEntry({ ...entryData, id: editingEntry.id, paid: editingEntry.paid });
+      updateTimeEntry({ ...entryData, id: editingEntry.id, paid: editingEntry.paid });
     } else {
-      onAddEntry(entryData);
+      addTimeEntry(entryData);
     }
     setIsFormDialogOpen(false);
   };
@@ -183,7 +183,7 @@ export function TimeLogList() {
   function onPaymentSubmit(values: z.infer<ReturnType<typeof paymentSchema>>) {
     if (selectedEntry) {
       const updatedEntry = { ...selectedEntry, paid: true, amount: values.amount };
-      onUpdateEntry(updatedEntry);
+      updateTimeEntry(updatedEntry);
       // Also update the selected entry in the detail view if it's open
       if (isDetailDialogOpen) {
           setSelectedEntry(updatedEntry);
@@ -193,21 +193,22 @@ export function TimeLogList() {
     paymentForm.reset();
   }
   
-  const dayEntries = entries
+  const dayEntries = timeEntries
     .filter((entry) => isSameDay(parseISO(entry.startTime), selectedDate))
     .sort((a, b) => parseISO(b.startTime).getTime() - parseISO(a.startTime).getTime());
 
-  const openPaymentDialog = (entry: TimeEntry, event: React.MouseEvent) => {
+  const handlePaymentClick = (entry: TimeEntry, event: React.MouseEvent) => {
     event.stopPropagation();
-    // If it's already paid, toggle to unpaid and remove amount
-    if (entry.paid) {
-        onUpdateEntry({ ...entry, paid: false, amount: undefined });
-    } else {
-        // If it's not paid, open dialog to enter amount
+    if (!entry.paid) {
         setSelectedEntry(entry);
         paymentForm.reset({ amount: entry.amount || 0 });
         setIsPaymentDialogOpen(true);
     }
+  };
+
+  const handleMarkAsUnpaid = (entry: TimeEntry, event: React.MouseEvent) => {
+    event.stopPropagation();
+    updateTimeEntry({ ...entry, paid: false, amount: undefined });
   };
 
 
@@ -401,9 +402,29 @@ export function TimeLogList() {
                                     <p className="font-medium">{getEmployeeName(entry.employeeId)}</p>
                                     <p className="text-sm text-muted-foreground">{getLocationName(entry.locationId)}</p>
                                 </div>
-                                <button onClick={(e) => openPaymentDialog(entry, e)} className="p-1 -m-1 border rounded-md">
-                                  {entry.paid ? <DollarSign className="h-5 w-5 text-green-500" /> : <DollarSign className="h-5 w-5 text-destructive" />}
-                                </button>
+                                {entry.paid ? (
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <button onClick={(e) => e.stopPropagation()} className="p-1 -m-1 border rounded-md">
+                                                <DollarSign className="h-5 w-5 text-green-500" />
+                                            </button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>{t('areYouSure')}</AlertDialogTitle>
+                                                <AlertDialogDescription>{t('unmarkAsPaidConfirmation')}</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                                                <AlertDialogAction onClick={(e) => handleMarkAsUnpaid(entry, e)}>{t('unmarkAsPaid')}</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                ) : (
+                                    <button onClick={(e) => handlePaymentClick(entry, e)} className="p-1 -m-1 border rounded-md">
+                                        <DollarSign className="h-5 w-5 text-destructive" />
+                                    </button>
+                                )}
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <div className="flex items-center gap-2 text-muted-foreground">
@@ -435,9 +456,29 @@ export function TimeLogList() {
                                 <TableCell>{formatTime(entry.endTime)}</TableCell>
                                 <TableCell>{calculateDuration(entry.startTime, entry.endTime)}</TableCell>
                                 <TableCell>
-                                   <button onClick={(e) => openPaymentDialog(entry, e)} className="p-1 border rounded-md">
-                                    {entry.paid ? <DollarSign className="h-5 w-5 text-green-500" /> : <DollarSign className="h-5 w-5 text-destructive" />}
-                                  </button>
+                                   {entry.paid ? (
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <button onClick={(e) => e.stopPropagation()} className="p-1 border rounded-md">
+                                                    <DollarSign className="h-5 w-5 text-green-500" />
+                                                </button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>{t('areYouSure')}</AlertDialogTitle>
+                                                    <AlertDialogDescription>{t('unmarkAsPaidConfirmation')}</AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={(e) => handleMarkAsUnpaid(entry, e)}>{t('unmarkAsPaid')}</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                      ) : (
+                                        <button onClick={(e) => handlePaymentClick(entry, e)} className="p-1 border rounded-md">
+                                            <DollarSign className="h-5 w-5 text-destructive" />
+                                        </button>
+                                      )}
                                 </TableCell>
                               </TableRow>
                             ))}
@@ -506,14 +547,14 @@ export function TimeLogList() {
                         onCheckedChange={(checked) => {
                             if (!checked) {
                               const newEntry = { ...selectedEntry, paid: false, amount: undefined };
-                              onUpdateEntry(newEntry);
+                              updateTimeEntry(newEntry);
                               setSelectedEntry(newEntry);
                             } else if (selectedEntry.amount === undefined) {
                                setIsPaymentDialogOpen(true)
                             }
                              else {
                                 const newEntry = { ...selectedEntry, paid: true };
-                                onUpdateEntry(newEntry);
+                                updateTimeEntry(newEntry);
                                 setSelectedEntry(newEntry);
                             }
                         }}
@@ -552,7 +593,7 @@ export function TimeLogList() {
                         <AlertDialogFooter>
                           <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
                           <AlertDialogAction onClick={() => {
-                            onDeleteEntry(selectedEntry.id);
+                            deleteTimeEntry(selectedEntry.id);
                             setIsDetailDialogOpen(false);
                           }}>{t('delete')}</AlertDialogAction>
                         </AlertDialogFooter>

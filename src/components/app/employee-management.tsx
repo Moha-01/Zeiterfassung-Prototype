@@ -149,16 +149,23 @@ export function EmployeeManagement() {
     setIsDetailDialogOpen(true);
   };
   
-  const openPaymentDialog = (entry: TimeEntry, event: React.MouseEvent) => {
+  const handlePaymentClick = (entry: TimeEntry, event: React.MouseEvent) => {
     event.stopPropagation();
-    if (entry.paid && entry.amount) {
-        updateTimeEntry({ ...entry, paid: false, amount: undefined });
-    } else {
+    // This function only handles marking as unpaid, which should not open the confirmation.
+    // The confirmation is handled by the AlertDialog for paid entries.
+    // So we only handle the case for marking as paid.
+    if (!entry.paid) {
         setSelectedEntry(entry);
         paymentForm.reset({ amount: entry.amount || 0 });
         setIsPaymentDialogOpen(true);
     }
   };
+
+  const handleMarkAsUnpaid = (entry: TimeEntry, event: React.MouseEvent) => {
+    event.stopPropagation();
+    updateTimeEntry({ ...entry, paid: false, amount: undefined });
+  };
+
 
   const handlePageChange = (employeeId: string, newPage: number) => {
     setCurrentPage(prev => ({...prev, [employeeId]: newPage}));
@@ -320,9 +327,29 @@ export function EmployeeManagement() {
                                     <TableCell>{getLocationName(entry.locationId)}</TableCell>
                                     <TableCell>{calculateDuration(entry.startTime, entry.endTime)}</TableCell>
                                     <TableCell>
-                                      <button onClick={(e) => openPaymentDialog(entry, e)} className="p-1 border rounded-md">
-                                        {entry.paid ? <DollarSign className="h-5 w-5 text-green-500" /> : <DollarSign className="h-5 w-5 text-destructive" />}
-                                      </button>
+                                    {entry.paid ? (
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <button onClick={(e) => e.stopPropagation()} className="p-1 border rounded-md">
+                                                    <DollarSign className="h-5 w-5 text-green-500" />
+                                                </button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>{t('areYouSure')}</AlertDialogTitle>
+                                                    <AlertDialogDescription>{t('unmarkAsPaidConfirmation')}</AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={(e) => handleMarkAsUnpaid(entry, e)}>{t('unmarkAsPaid')}</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                      ) : (
+                                        <button onClick={(e) => handlePaymentClick(entry, e)} className="p-1 border rounded-md">
+                                            <DollarSign className="h-5 w-5 text-destructive" />
+                                        </button>
+                                      )}
                                     </TableCell>
                                   </TableRow>
                                 ))}
@@ -652,5 +679,3 @@ export function EmployeeManagement() {
     </>
   );
 }
-
-    
