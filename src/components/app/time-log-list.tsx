@@ -71,6 +71,7 @@ const timeEntrySchema = (t: (key: string) => string) => z.object({
   locationId: z.string().min(1, t('locationIsRequired')),
   startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, t('invalidTimeFormat')),
   endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, t('invalidTimeFormat')),
+  amount: z.coerce.number().optional(),
 }).refine(data => {
   const start = parse(data.startTime, 'HH:mm', new Date());
   const end = parse(data.endTime, 'HH:mm', new Date());
@@ -132,6 +133,7 @@ export function TimeLogList({
       locationId: entry.locationId,
       startTime: format(parseISO(entry.startTime), "HH:mm"),
       endTime: format(parseISO(entry.endTime), "HH:mm"),
+      amount: entry.amount,
     });
     setIsFormDialogOpen(true);
   };
@@ -147,6 +149,7 @@ export function TimeLogList({
       locationId: '',
       startTime: format(startTime, "HH:mm"),
       endTime: format(endTime, "HH:mm"),
+      amount: undefined,
     });
     setIsFormDialogOpen(true);
   };
@@ -172,10 +175,11 @@ export function TimeLogList({
       locationId: values.locationId,
       startTime: createDate(values.startTime),
       endTime: createDate(values.endTime),
+      amount: values.amount,
     };
 
     if (editingEntry) {
-      onUpdateEntry({ ...entryData, id: editingEntry.id, paid: editingEntry.paid, amount: editingEntry.amount });
+      onUpdateEntry({ ...entryData, id: editingEntry.id, paid: editingEntry.paid });
     } else {
       onAddEntry(entryData);
     }
@@ -334,6 +338,19 @@ export function TimeLogList({
                     )}
                     />
                 </div>
+                <FormField
+                    control={form.control}
+                    name="amount"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>{t('amount')} ({t('currency')}) <span className="text-muted-foreground">({t('optional')})</span></FormLabel>
+                        <FormControl>
+                            <Input type="number" placeholder="e.g. 50000" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
                 <DialogFooter>
                   <DialogClose asChild>
                     <Button type="button" variant="secondary">{t('cancel')}</Button>
@@ -493,9 +510,18 @@ export function TimeLogList({
                         id="paid"
                         checked={selectedEntry.paid}
                         onCheckedChange={(checked) => {
-                            const newEntry = { ...selectedEntry, paid: !!checked, amount: checked ? selectedEntry.amount : undefined };
-                            onUpdateEntry(newEntry);
-                            setSelectedEntry(newEntry);
+                            if (!checked) {
+                              const newEntry = { ...selectedEntry, paid: false, amount: undefined };
+                              onUpdateEntry(newEntry);
+                              setSelectedEntry(newEntry);
+                            } else if (selectedEntry.amount === undefined) {
+                               setIsPaymentDialogOpen(true)
+                            }
+                             else {
+                                const newEntry = { ...selectedEntry, paid: true };
+                                onUpdateEntry(newEntry);
+                                setSelectedEntry(newEntry);
+                            }
                         }}
                     />
                     <label

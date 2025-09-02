@@ -88,5 +88,6 @@
   "timeEntries": "Zeiteinträge",
   "status": "Status",
   "unpaid": "Unbezahlt",
-  "reportGeneratedBy": "Bericht erstellt von"
+  "reportGeneratedBy": "Bericht erstellt von",
+  "optional": "optional"
 }

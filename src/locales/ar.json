@@ -88,5 +88,6 @@
   "timeEntries": "إدخالات الوقت",
   "status": "الحالة",
   "unpaid": "غير مدفوع",
-  "reportGeneratedBy": "تم إنشاء التقرير بواسطة"
+  "reportGeneratedBy": "تم إنشاء التقرير بواسطة",
+  "optional": "اختياري"
 }

@@ -24,7 +24,8 @@ export default function Home() {
 
 
   const addTimeEntry = (entry: Omit<TimeEntry, 'id' | 'paid'>) => {
-    const newEntry = { ...entry, id: crypto.randomUUID(), paid: false };
+    const paid = entry.amount !== undefined && entry.amount > 0;
+    const newEntry = { ...entry, id: crypto.randomUUID(), paid };
     setTimeEntries((prev) => [newEntry, ...prev]);
   };
 
