@@ -709,7 +709,7 @@ export function EmployeeManagement({ employees, timeEntries, locations, onAddEmp
         <div className="fixed -left-[9999px] -top-[9999px] opacity-0 pointer-events-none">
           <EmployeeReport
             employee={reportEmployee}
-            timeEntries={timeEntries.filter(e => e.employeeId === reportEmployee.id)}
+            timeEntries={timeEntries.filter(e => e.employeeId === reportEmployee.id).sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())}
             locations={locations}
           />
         </div>
