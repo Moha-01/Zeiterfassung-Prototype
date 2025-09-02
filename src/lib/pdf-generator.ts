@@ -1,3 +1,4 @@
+
 // @ts-nocheck
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -131,12 +132,12 @@ export const generatePdfReport = async (employee: Employee, entries: TimeEntry[]
     doc.text(t('timeEntries'), (doc.internal.pageSize.width - doc.getTextWidth(t('timeEntries'))) / 2, tableY);
 
     const tableColumns = [
-        { header: t('status'), dataKey: 'status' },
-        { header: t('amount'), dataKey: 'amount' },
-        { header: t('duration'), dataKey: 'duration' },
-        { header: t('time'), dataKey: 'time' },
-        { header: t('location'), dataKey: 'location' },
         { header: t('date'), dataKey: 'date' },
+        { header: t('location'), dataKey: 'location' },
+        { header: t('time'), dataKey: 'time' },
+        { header: t('duration'), dataKey: 'duration' },
+        { header: t('amount'), dataKey: 'amount' },
+        { header: t('status'), dataKey: 'status' },
     ];
 
     const tableRows = entries.map(entry => {
@@ -152,7 +153,7 @@ export const generatePdfReport = async (employee: Employee, entries: TimeEntry[]
         return row;
     });
 
-    const finalColumns = isRtl ? tableColumns : tableColumns.slice().reverse();
+    const finalColumns = isRtl ? tableColumns.slice().reverse() : tableColumns;
 
     doc.autoTable({
         startY: tableY + 5,
