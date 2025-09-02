@@ -62,7 +62,8 @@ export function EmployeeManagement() {
     updateTimeEntry, 
     deleteTimeEntry,
     deleteTimeEntriesForEmployee, 
-    getLocationName 
+    getLocationName,
+    getEmployeeName,
   } = useAppContext();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
